@@ -7,7 +7,7 @@
 # device_source5value_source4value_source3value_source2value.txt 		#
 #																		#
 # Author: Trevor Stirling												#
-# Date: March 14, 2023													#
+# Date: May 29, 2023													#
 #########################################################################
 
 #TODO: Test K2520 power meter with other source (see commented out code below)
@@ -26,6 +26,11 @@ def LIV(device_name):
 	##########################################
 	characterization_directory = os.path.join('..','Data')
 	display_before_save = False #True/False
+	#Plot as current density
+	plot_current_density = True
+	ask_user_for_device_dimensions = True
+	device_length = 1 #length of device [mm], ignored if plot_current_density = False or ask_user_for_device_dimensions = True
+	injection_width = 2 #average via width [um], ignored if plot_current_density = False ask_user_for_device_dimensions = True
 	### Power Meter - K2520, or Newport
 	Power_meter = 'Newport'
 	Power_meter_channel = 'A' #A or B, for two channel Newport only (ignored for one channel)
@@ -163,6 +168,10 @@ def LIV(device_name):
 		Source_step_5 = Source_step_5*1e-3
 		Source_start_5 = Source_start_5*1e-3
 		Source_stop_5 = Source_stop_5*1e-3
+	if ask_user_for_device_dimensions:
+		device_length = float(input("Enter the device length in mm:"))
+		injection_width = float(input("Enter the device width in um:"))
+	current_area = device_length/10*injection_width/10000
 	### Sweep values and collect data
 	sweep_num = 0
 	if Source_1_mode != 'Current':
@@ -295,7 +304,7 @@ def LIV(device_name):
 						print(" Data saved to",csv_location)
 					### Plot data
 					if display_fig or save_fig:
-						fig = plot_LIV(device_name, power_list, Source_input_list_1, voltage_list)[0]
+						fig = plot_LIV(device_name, power_list, Source_input_list_1, voltage_list, plot_current_density=plot_current_density, current_area=current_area)[0]
 						if save_fig:
 							fig.savefig(png_location,bbox_inches='tight')
 							print(" Figure saved to",png_location)

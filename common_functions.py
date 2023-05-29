@@ -3,7 +3,7 @@
 # analysis scripts 														#
 #																		#
 # Author: Trevor Stirling												#
-# Date: March 14, 2023													#
+# Date: May 29, 2023													#
 #########################################################################
 
 import pyvisa
@@ -210,7 +210,8 @@ def get_file_locations(save_data, save_fig, characterization_directory, subfolde
 			png_location = os.path.join(figure_directory,device_name + '.png')
 	return [csv_location, png_location, device_name]
 
-def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best_fit_numbers=True):
+def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best_fit_numbers=True, plot_current_density=False, current_area=1):
+	#If plotting current density, expects area to be [cm^-2]
 	#Calculate figure values
 	power = [(x - power[0])*1000 for x in power] #converts from [W] to [mW] and zeros background
 	current = [x*1000 for x in current] #converts from [A] to [mA]
@@ -251,19 +252,29 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 	plt.title(str(device_name))
 	plt_colour = 'tab:blue'
 	ax1.set_ylabel('Voltage [V]', color=plt_colour)
-	ax1.plot(current, voltage, color=plt_colour)
+	if plot_current_density:
+		ax1.plot([i/current_area/1000/1000 for i in current], voltage, color=plt_colour)
+	else:
+		ax1.plot(current, voltage, color=plt_colour)
 	ax1.tick_params(axis='y', labelcolor=plt_colour)
 	ax2 = ax1.twinx()
 	plt_colour = 'tab:red'
 	ax2.set_ylabel('Power [mW]', color=plt_colour)
 	if good_fit and show_best_fit:
-		ax2.plot(current_fit, piecewise_linear(current_fit,*params),'--',color='black')
-	ax2.plot(current, power, color=plt_colour)
-	if good_fit and show_best_fit_numbers:
-		ax1.set_xlabel('Current [mA]\n\nThreshold current = '+"{:.1f}".format(threshold_current)+' mA\nSlope efficiency = '+"{:.1f}".format(post_thresh_slope*1000)+' mW/A/facet')
-		#ax2.plot(threshold_current, piecewise_linear(threshold_current, *params), "o", mfc='none', color='black')
+		if plot_current_density:
+			ax2.plot([i/current_area/1000/1000 for i in current_fit], piecewise_linear(current_fit,*params),'--',color='black')
+		else:
+			ax2.plot(current_fit, piecewise_linear(current_fit,*params),'--',color='black')
+	if plot_current_density:
+		ax2.plot([i/current_area/1000/1000 for i in current], power, color=plt_colour)
+		x_label_string = 'Current Density [kA/cm^2]'
 	else:
-		ax1.set_xlabel('Current [mA]')
+		ax2.plot(current, power, color=plt_colour)
+		x_label_string = 'Current [mA]'
+	if good_fit and show_best_fit_numbers:
+		ax1.set_xlabel(x_label_string+'\n\nThreshold current = '+"{:.1f}".format(threshold_current)+' mA\nSlope efficiency = '+"{:.1f}".format(post_thresh_slope*1000)+' mW/A/facet')
+	else:
+		ax1.set_xlabel(x_label_string)
 	ax2.tick_params(axis='y', labelcolor=plt_colour)
 	plt.tight_layout()
 	return [fig, threshold_current, post_thresh_slope, good_fit]

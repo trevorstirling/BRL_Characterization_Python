@@ -3,7 +3,7 @@
 # e.g. to change plotting options like show_best_fit or show_SMSR		#
 #																		#
 # Author: Trevor Stirling												#
-# Date: May 24, 2023													#
+# Date: May 29, 2023													#
 #########################################################################
 
 import os
@@ -18,15 +18,17 @@ display_fig = False
 save_fig = True
 whole_directory = True #If true, device_name is ignored
 print_figure_locations = False #boolean to output locations figures are saved to terminal
-
 #Define data location
-folder_date = '2023_03_09'
+folder_date = '2023_02_14'
 device_name = 'MaiTai_792nm_20uW_minG_512Hz_1700Hz_16000pts' #ignored for whole_directory
-plot_type = 'Autocorrelation' #LIV, Spectrum or Autocorrelation
+plot_type = 'LIV' #LIV, Spectrum or Autocorrelation
 #LIV specific options
 is_PD_current = False #Should always be false except for old K2520 data which measured current instead of power.
 show_best_fit = True
 show_best_fit_numbers = True
+plot_current_density = True
+device_length = 1 #length of device [mm], ignored if plot_current_density = False
+injection_width = 2 #average via width [um], ignored if plot_current_density = False
 responsivity = 1/1.74 #measured photodiode responsivity [A/W]
 #Spectrum specific options
 show_max=False
@@ -68,13 +70,14 @@ for i,file in enumerate(all_files):
 	data = np.loadtxt(os.path.join(characterization_directory,folder_date,plot_type,'Data',device_name+'.csv'), delimiter=',', skiprows=1)
 	[png_location, device_name] = get_file_locations(0, save_fig, characterization_directory, plot_type, device_name, folder_date)[1:3]
 	if plot_type == 'LIV':
+		current_area = device_length/10*injection_width/10000
 		current = data[:,0] #[A]
 		if is_PD_current:
 			power = data[:,2]/responsivity #[W]
 		else:
 			power = data[:,2] #[W]
 		voltage = data[:,1] #[V]
-		fig = plot_LIV(device_name, power, current, voltage, show_best_fit, show_best_fit_numbers)[0]
+		fig = plot_LIV(device_name, power, current, voltage, show_best_fit, show_best_fit_numbers, plot_current_density=plot_current_density, current_area=current_area)[0]
 	elif plot_type == 'Spectrum':
 		wavelength = data[:,0] #[nm]
 		power = data[:,1] #[dBm]
