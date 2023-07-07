@@ -19,7 +19,7 @@
 # -set_sensitivity()													#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Feb 18, 2023														#
+# Date: July 6, 2023													#
 #########################################################################
 
 import numpy as np
@@ -31,6 +31,8 @@ class AQ6374:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #[ms] set long timeout to allow sweeping
+		#set command format to AQ6374 format:
+		self.GPIB.write('CFORM1') #If in AQ6317 format, change to AQ6374 format
         
 	def initialize(self):
 		#Restore Defaults
@@ -49,10 +51,11 @@ class AQ6374:
 	
 	def capture(self, channel):
 		if channel not in ['A','B','C','D','E','F','G']:
-			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-F"+colour.end)
+			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-G"+colour.end)
 		print(" Capturing...")
 		power = np.array(self.GPIB.query_ascii_values(':TRAC:DATA:Y? TR'+channel)) #Level data
 		wavelength = np.array(self.GPIB.query_ascii_values(':TRAC:DATA:X? TR'+channel)) #Wavelength data
+		wavelength = wavelength*1e9 #convert to nm
 		# #Delete first data point (always erroneous)
 		# power = power[1:]
 		# wavelength = wavelength[1:]
@@ -64,17 +67,19 @@ class AQ6374:
 		return wavelength, power #nm, dBm
             
 	def is_sweeping(self):
+		self.GPIB.write(':SYST:COMM:CFOR 0') #switch to AQ6317 command format to check if sweeping
 		sweeping = np.array(self.GPIB.query_ascii_values('SWEEP?'))
+		self.GPIB.write('CFORM1') #switch back to AQ6374 command format
 		if sweeping:
 			return True
 		else:
 			return False
 	
 	def wait_for_sweeping(self):
-		sweeping = np.array(self.GPIB.query_ascii_values('SWEEP?'))
+		sweeping = self.is_sweeping()
 		while sweeping == 1:
 			time.sleep(1)
-			sweeping = np.array(self.GPIB.query_ascii_values('SWEEP?'))
+			sweeping = self.is_sweeping()
 
 	def sweep(self, channel='N/A'):
 		#if passed a channel, only sweep that channel
@@ -82,8 +87,8 @@ class AQ6374:
 		if channel in channel_list:
 			for chan in channel_list:
 				if chan != channel:
-					self.GPIB.write('TRAC:ATTR:TR'+chan+' FIX')
-			self.GPIB.write('TRAC:ATTR:TR'+chan+' WRIT')
+					self.GPIB.write(':TRAC:ATTR:TR'+chan+' FIX')
+			self.GPIB.write(':TRAC:ATTR:TR'+channel+' WRIT')
 		elif channel != 'N/A':
 			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-G (or left empty)"+colour.end)
 		print(" Sweeping...")
@@ -98,13 +103,13 @@ class AQ6374:
 		self.GPIB.write(':DISP:WIND:TRAC:Y1:SCAL:PDIV '+str(scale)) #dB/div
 
 	def set_wavelength(self, wavelength):
-		self.GPIB.write(':SENS:WAV:CENT '+str(wavelength)) #600 to 1750 nm
+		self.GPIB.write(':SENS:WAV:CENT '+str(wavelength)+'nm') #600 to 1750 nm
 
 	def set_span(self, span):
-		self.GPIB.write(':SENS:WAV:SPAN '+str(span)) #0, or 0.5 to 1200 nm
+		self.GPIB.write(':SENS:WAV:SPAN '+str(span)+'nm') #0, or 0.5 to 1200 nm
 
 	def set_rbw(self, rbw):
-		self.GPIB.write(':SENS:BAND:RES '+str(rbw)) #0.01 to 2.0 nm
+		self.GPIB.write(':SENS:BAND:RES '+str(rbw)+'nm') #0.01 to 2.0 nm
 	
 	def set_sensitivity(self, sensitivity):
 		if sensitivity == 'MID':
@@ -119,31 +124,34 @@ class AQ6374:
 			raise Exception(colour.red+colour.alert+" "+str(sensitivity)+" is not a valid sensitivity setting"+colour.end)
 
 	def peak_to_center(self):
+		self.GPIB.write(':CALC:MARK:MAX')
+		wavelength = float(self.GPIB.query_ascii_values(':CALC:MARK:X? 0')[0])
 		self.GPIB.write(':CALC:MARK:MAX:SCEN')
-		self.GPIB.write(':CALC:MARK:SCEN')
-		[wavelength, power] = self.GPIB.query_ascii_values(':CALC:MARK:X? 0')
+		self.sweep()
+		self.GPIB.write(':CALC:MARK:X 0,'+str(wavelength)+'nm')
+		power = float(self.GPIB.query_ascii_values(':CALC:MARK:Y? 0')[0])
 		print(" Wavelength = "+"{:.2f}".format(wavelength)+" nm")
 		print(" Power = "+"{:.2f}".format(power)+" dBm")
 
 	def sweep_continuous(self, status):
 		if status == 1:
-			self.GPIB.write(':INITI:SMOD REP;:INIT')
+			self.GPIB.write(':INIT:SMOD REP;:INIT')
 		elif status == 0:
-			self.GPIB.write(':INITI:SMOD SING;:INIT')
+			self.GPIB.write(':INIT:SMOD SING;:INIT')
 		else:
 			raise Exception(colour.red+colour.alert+" sweep_continuous status must be 1 or 0"+colour.end)
 
 	def read_value(self, type):
 		if type == 'Reference Level':
-			return float(self.GPIB.query_ascii_values(':DISP:WIND:Y1:SCA:RLEV?')[0])
+			return float(self.GPIB.query_ascii_values(':DISP:WIND:TRAC:Y1:SCAL:RLEV?')[0])
 		elif type == 'Wavelength':
-			return float(self.GPIB.query_ascii_values(':SENS:WAV:CENT?')[0])
+			return float(self.GPIB.query_ascii_values(':SENS:WAV:CENT?')[0]*1e9)
 		elif type == 'Span':
-			return float(self.GPIB.query_ascii_values(':SENS:WAV:SPAN?')[0])
+			return float(self.GPIB.query_ascii_values(':SENS:WAV:SPAN?')[0]*1e9)
 		elif type == 'Y Scale':
 			return float(self.GPIB.query_ascii_values(':DISP:WIND:TRAC:Y1:SCAL:PDIV?')[0])
 		elif type == 'RBW':
-			return float(self.GPIB.query_ascii_values(':SENS:BAND:RES?')[0])
+			return float(self.GPIB.query_ascii_values(':SENS:BAND:RES?')[0]*1e9)
 		elif type == 'Sensitivity':
 			sensitivity = int(self.GPIB.query_ascii_values(':SENS:SENS?')[0])
 			if sensitivity == 0:

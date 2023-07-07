@@ -1,5 +1,6 @@
 #########################################################################
-# Functions to interface with A86146B optical spectrum analyzer			#
+# Functions to interface with A86146B and A86142A optical spectrum 		#
+#   analyzers															#
 # OSA common functions:													#
 # -initialize()															#
 # -capture()															#
@@ -19,7 +20,7 @@
 # -set_vbw()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Feb 18, 2022													#
+# Date: July 6, 2023													#
 #########################################################################
 
 ### Need to test is_sweeping(), wait_for_sweeping(), and sweep()
@@ -27,7 +28,7 @@
 import numpy as np
 from common_functions import colour
 
-class A86146B:
+class A8614x:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #set long timeout to allow sweeping
@@ -66,7 +67,8 @@ class A86146B:
 		return wavelength, power
 	
 	def is_sweeping(self):
-		self.GPIB.write('*ESE 1')
+		#Always returning False, need to fix
+		self.GPIB.write('*ESE 32')
 		complete = self.GPIB.query_ascii_values('*ESE?')
 		if complete:
 			return False
@@ -93,22 +95,22 @@ class A86146B:
 		print(" Sweep complete")
 
 	def set_ref_level(self, ref_level):
-		self.GPIB.write('DISP:WIND:TRAC:Y:SCAL:RLEV '+str(ref_level)+'dBm')
+		self.GPIB.write('DISP:WIND:TRAC:Y:SCAL:RLEV '+str(ref_level)+' dBm')
 	
 	def set_y_scale(self, scale):
-		self.GPIB.write('DISP:WIND:TRAC:Y:SCAL:PDIV '+str(scale)+'dB')
+		self.GPIB.write('DISP:WIND:TRAC:Y:SCAL:PDIV '+str(scale)+' dB')
 	
 	def set_wavelength(self, wavelength):
-		self.GPIB.write('SENS:WAV:CENT '+str(wavelength)+'nm')
+		self.GPIB.write('SENS:WAV:CENT '+str(wavelength)+' nm')
 	
 	def set_span(self, span):
-		self.GPIB.write('SENS:WAV:SPAN '+str(span)+'nm')
+		self.GPIB.write('SENS:WAV:SPAN '+str(span)+' nm')
 		
 	def set_rbw(self, rbw):
-		self.GPIB.write('SENS:BWID:RES '+str(rbw)+'nm')
+		self.GPIB.write('SENS:BWID:RES '+str(rbw)+' nm')
 	
 	def set_vbw(self, vbw):
-		self.GPIB.write('SENS:BWID:VID '+str(vbw)+'Hz') #0.1 to 3000 Hz
+		self.GPIB.write('SENS:BWID:VID '+str(vbw)+' Hz') #0.1 to 3000 Hz
 		
 	def peak_to_center(self):
 		self.GPIB.write('CALC1:MARK1:MAX')#marker to peak
@@ -130,13 +132,13 @@ class A86146B:
 		if type == 'Reference Level':
 			return float(self.GPIB.query_ascii_values('DISP:WIND:TRAC:Y:SCAL:RLEV?')[0])
 		elif type == 'Wavelength':
-			return float(self.GPIB.query_ascii_values('SENS:WAV:CENT?')[0])
+			return float(self.GPIB.query_ascii_values('SENS:WAV:CENT?')[0]*1e9)
 		elif type == 'Span':
-			return float(self.GPIB.query_ascii_values('SENS:WAV:SPAN?')[0])
+			return float(self.GPIB.query_ascii_values('SENS:WAV:SPAN?')[0]*1e9)
 		elif type == 'Y Scale':
 			return float(self.GPIB.query_ascii_values('DISP:WIND:TRAC:Y:SCAL:PDIV?')[0])
 		elif type == 'RBW':
-			return float(self.GPIB.query_ascii_values('SENS:BWID:RES?')[0])
+			return float(self.GPIB.query_ascii_values('SENS:BWID:RES?')[0]*1e9)
 		elif type == 'VBW':
 			return float(self.GPIB.query_ascii_values('SENS:BWID:VID?')[0])
 		else:

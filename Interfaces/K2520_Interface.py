@@ -20,9 +20,10 @@
 #																		#
 # K2520 specific functions:												#
 # -sweep_current()														#
+# -enable_init_continuous()												#
 #																		#
 # Author: Trevor Stirling												#
-# Date: April 19, 2023													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import time
@@ -55,7 +56,7 @@ class K2520:
 		self.GPIB.write(':SOUR1:CURR:POL POS')
 		#Configure Math Functions
 		self.GPIB.write(':CALC1:FORM RES')
-		self.GPIB.write(':CALC1:STAT ON')
+		self.GPIB.write(':CALC1:STAT OFF')
 		#Format Data Output
 		self.GPIB.write(':FORM:DATA ASC')
 		self.GPIB.write(':FORM:ELEM CURR,VOLT,CURR2')
@@ -129,8 +130,8 @@ class K2520:
 
 	def read_value(self, type):
 		result = self.GPIB.query_ascii_values(':READ?')
-		result.extend(self.GPIB.query_ascii_values(':CALC1:DATA?'))
-		drive_current, voltage, photodiode_current, resistance = result
+		#result.extend(self.GPIB.query_ascii_values(':CALC1:DATA?'))
+		drive_current, voltage, photodiode_current = result
 		if type == 'Current':
 			return float(drive_current)
 		elif type == 'Voltage':
@@ -138,7 +139,7 @@ class K2520:
 		elif type == 'PD_current':
 			return float(photodiode_current)
 		elif type == 'Resistance':
-			return float(resistance)
+			return float(voltage/drive_current)
 		else:
 			raise Exception(colour.red+colour.alert+" Read Error: Invalid Data Name"+colour.end)
 	
@@ -196,3 +197,28 @@ class K2520:
 		self.GPIB.write(':SOUR1:CURR ' + str(start)) #set to first input to avoid accidental damage
 		power = [i/self.responsivity for i in photocurrent]
 		return current, voltage, power
+
+	def enable_init_continuous(self):
+		#Turns on INIT Continuous setting which is auto disabled after a pulsed sweep
+		#There does not seem to be a command to change this setting, so currently sending individual key presses with delay.
+		self.GPIB.write(':SYST:KEY 28')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 20')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 3')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 3')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 3')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 3')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 10')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 18')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 3')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 18')
+		time.sleep(0.1)
+		self.GPIB.write(':SYST:KEY 11')

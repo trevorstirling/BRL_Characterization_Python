@@ -2,7 +2,7 @@
 # Script to test current/voltage source code works properly				#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Nov 14, 2022													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import sys
@@ -40,13 +40,16 @@ def Source_Regression_Test(device):
 		print(colour.green+" Set Current Test: PASSED"+colour.end)
 		pass_count += 1
 	else:
+		print(colour.red+" Set Current Test results "+str(value_1)+", "+str(value_2)+colour.end)
 		print(colour.red+" Set Current Test: FAILED"+colour.end)
 	#Get Mode Test
 	test_count += 1
-	if source_inst.get_mode() == source_mode:
+	value_1 = source_inst.get_mode()
+	if value_1 == source_mode:
 		print(colour.green+" Get Mode Test: PASSED"+colour.end)
 		pass_count += 1
 	else:
+		print(colour.red+" Get Mode Test results "+str(value_1)+colour.end)
 		print(colour.red+" Get Mode Test: FAILED"+colour.end)
 	#Safe Turn On/Off Test
 	test_count += 1
@@ -69,6 +72,7 @@ def Source_Regression_Test(device):
 		print(colour.green+" Read Current Test: PASSED"+colour.end)
 		pass_count += 1
 	else:
+		print(colour.red+" Read Current Test results "+str(current_on)+colour.end)
 		print(colour.red+" Read Current Test: FAILED"+colour.end)
 	#Voltage mode tests
 	if has_voltage_mode:
@@ -84,10 +88,11 @@ def Source_Regression_Test(device):
 		source_inst.set_value(value_2_set,'Voltage')
 		value_2 = source_inst.read_setting()
 		if round(value_1*10) == rount(value_1_set*10) and round(value_2*10) == round(value_2_set*10):
-			print(colour.green+" Set Current Test: PASSED"+colour.end)
+			print(colour.green+" Set Voltage Test: PASSED"+colour.end)
 			pass_count += 1
 		else:
-			print(colour.red+" Set Current Test: FAILED"+colour.end)
+			print(colour.red+" Set Voltage Test results "+str(value_1)+", "+str(value_2)+colour.end)
+			print(colour.red+" Set Voltage Test: FAILED"+colour.end)
 		#Safe Turn On/Off Test
 		test_count += 1
 		turn_on_value = 2
@@ -109,6 +114,7 @@ def Source_Regression_Test(device):
 			print(colour.green+" Read Voltage Test: PASSED"+colour.end)
 			pass_count += 1
 		else:
+			print(colour.red+" Read Voltage Test results "+str(voltage_on)+colour.end)
 			print(colour.red+" Read Voltage Test: FAILED"+colour.end)
 	### Disconnect
 	print(" Disconnected from Source")

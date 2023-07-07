@@ -2,7 +2,7 @@
 # Script to test laser code works properly								#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Nov 14, 2022													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import sys
@@ -31,6 +31,7 @@ def Spectrum_Analyzer_Regression_Test(laser):
 		print(colour.green+" Power Test: PASSED"+colour.end)
 		pass_count += 1
 	else:
+		print(colour.red+" Power Test results "+str(value_1)+", "+str(value_2)+colour.end)
 		print(colour.red+" Power Test: FAILED"+colour.end)
 	#Wavelength Test
 	test_count += 1
@@ -44,6 +45,7 @@ def Spectrum_Analyzer_Regression_Test(laser):
 		print(colour.green+" Wavelength Test: PASSED"+colour.end)
 		pass_count += 1
 	else:
+		print(colour.red+" Wavelength Test results "+str(value_1)+", "+str(value_2)+colour.end)
 		print(colour.red+" Wavelength Test: FAILED"+colour.end)
 	
 	### Disconnect

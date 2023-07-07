@@ -5,7 +5,7 @@
 #  save data and figure													#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Sept 7, 2022													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import os
@@ -19,9 +19,9 @@ def Spectrum_Analyzer_Capture(device_name):
 	####         Define Variables         ####
 	##########################################
 	characterization_directory = os.path.join('..','Data')
-	### Spectrum Analyzer - A86146B, AQ6317B, AQ6374, or E4407B
-	spectrum_analyzer = 'AQ6374'
-	spectrum_analyzer_channel = 'A' #A-C for AQ6317B, A-F for A86146B, A-G for AQ6374, or 1-3 for E4407B
+	### Spectrum Analyzer - A86146B, A86142A, AQ6317B, AQ6374, or E4407B
+	spectrum_analyzer = 'A86142A'
+	spectrum_analyzer_channel = 'A' #A-C for AQ6317B, A-F for A8614x, A-G for AQ6374, or 1-3 for E4407B
 	### Sweep Parameters
 	sweep_before_capture = False
 	##########################################

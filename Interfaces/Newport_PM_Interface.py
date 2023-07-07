@@ -13,7 +13,7 @@
 # -read_range()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: April 19, 2023													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import os
@@ -69,7 +69,10 @@ class Newport_PM:
 			raise Exception(colour.red+colour.alert+" Channel "+str(channel)+" is not a valid choice"+colour.end)
 	
 	def read_power(self):
-		power = float(self.query('PM:P?'))
+		power = self.query('PM:P?')
+		if power == '':
+			raise Exception(colour.red+colour.alert+" Newport Power Meter is not responding - restart power meter and try again"+colour.end)
+		power = float(power)
 		if power<-3e+38:
 			#detector saturated
 			input(colour.yellow+colour.alert+" The detector is saturated, please unsatuturate it and press enter to continue..."+colour.alert+colour.end)
@@ -138,7 +141,7 @@ class Newport_PM:
 		else:
 			raise Exception(colour.red+colour.alert+" Range must be 0, 1, 2, 3, or 4"+colour.end)
 
-	def set_autorange(self):
+	def set_autorange(self, status=1):
 		if status == 0 or status == 1:
 			self.write('PM:AUTO '+str(status))
 		else:

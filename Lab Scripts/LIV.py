@@ -7,10 +7,11 @@
 # device_source5value_source4value_source3value_source2value.txt 		#
 #																		#
 # Author: Trevor Stirling												#
-# Date: May 29, 2023													#
+# Date: July 6, 2023													#
 #########################################################################
 
 #TODO: Test K2520 power meter with other source (see commented out code below)
+#	   Two detector LIV causing issues - Newport PM replies power = '' - I think this was an issue with the USB cable and is now fixed?
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,29 +26,31 @@ def LIV(device_name):
 	####         Define Variables         ####
 	##########################################
 	characterization_directory = os.path.join('..','Data')
-	display_before_save = False #True/False
+	display_before_save = True #True/False
 	#Plot as current density
 	plot_current_density = True
-	ask_user_for_device_dimensions = True
-	device_length = 1 #length of device [mm], ignored if plot_current_density = False or ask_user_for_device_dimensions = True
-	injection_width = 2 #average via width [um], ignored if plot_current_density = False ask_user_for_device_dimensions = True
+	ask_user_for_device_dimensions = 'Width_Only' #True/False/Width_Only For current density calculation
+	K2520_internal_sweep = True #Much faster, only turn off for debugging
+	device_length = 0.5 #length of device [mm], ignored if plot_current_density = False or ask_user_for_device_dimensions = True
+	injection_width = 4.1 #average via width [um], ignored if plot_current_density = False ask_user_for_device_dimensions = True
 	### Power Meter - K2520, or Newport
-	Power_meter = 'Newport'
-	Power_meter_channel = 'A' #A or B, for two channel Newport only (ignored for one channel)
+	Power_meter = 'K2520'
+	Power_meter_channel_1 = 'A' #A or B, for two channel Newport only (ignored for one channel)
+	Power_meter_channel_2 = 'OFF' #A, B, or OFF for two channel Newport only (ignored for one channel)
 	### Channel 1 Source - OFF, K2520, K2604B, B2902A, or LDC3908
-	Source_1 = 'B2902A'
+	Source_1 = 'K2520'
 	Source_1_mode = 'Current' #'Current' or 'Voltage'
 	Source_1_channel = 1 #1-16, 'A' or 'B', for two channel sources only (ignored for one channel)
 	Source_start_1 = 1 #[mA] or [V]
 	Source_step_1 = 1 #[mA] or [V]
-	Source_stop_1 = 130 #[mA] or [V]
-	waveform_1 = "DC" #pulsed or DC
-	pulse_delay_1 = 20e-6 #delay between pulses [s] (pulsed mode only)
-	pulse_width_1 = 1e-6 #width of pulses [s] (pulsed mode only)
+	Source_stop_1 = 150 #[mA] or [V]
+	waveform_1 = "pulsed" #pulsed or DC
+	pulse_delay_1 = 160e-6 #delay between pulses [s] (pulsed mode only)
+	pulse_width_1 = 8e-6 #width of pulses [s] (pulsed mode only)
 	protection_voltage_1 = 4 #[V]
 	protection_current_1 = 0.1 #[A]
 	### Channel 2 Source - OFF, K2520, K2604B, B2902A, or LDC3908
-	Source_2 = 'B2902A'
+	Source_2 = 'OFF'
 	Source_2_mode = 'Voltage' #'Current' or 'Voltage'
 	Source_2_channel = 2 #1-16, 'A' or 'B', for two channel sources only (ignored for one channel)
 	Source_start_2 = -0.6 #[mA] or [V]
@@ -108,7 +111,8 @@ def LIV(device_name):
 		display_fig = display_before_save
 		save_fig = True
 		save_data = True
-	K2520_internal_sweep = False #Temporarily turned off as K2520 requires extra time to stabilize - consider new cable?
+	if waveform_1 == 'pulsed':
+		device_name += '_pulsed'
 	### Connect to Lab Equipment
 	Source_1_mode = Source_1_mode.capitalize()
 	Source_2_mode = Source_2_mode.capitalize()
@@ -122,6 +126,7 @@ def LIV(device_name):
 	Source_inst_4 = connect_to_GPIB(Source_4,[Source_4_mode,Source_4_channel,protection_voltage_4,protection_current_1,waveform_4,pulse_delay_4,pulse_width_4])
 	Source_inst_5 = connect_to_GPIB(Source_5,[Source_5_mode,Source_5_channel,protection_voltage_5,protection_current_1,waveform_5,pulse_delay_5,pulse_width_5])
 	# Power Meter
+	two_facet_LIV = False
 	if Power_meter == 'K2520':
 		# if Source_1 == 'K2520':
 		# 	PM_inst = Source_inst_1
@@ -143,8 +148,12 @@ def LIV(device_name):
 		else:
 			PM_inst = Source_inst_1
 	elif Power_meter == 'Newport':
+		if waveform_1.lower() == 'pulsed':
+			raise Exception(colour.red+" The K2520 power meter must be used for pulsed mode"+colour.end)
 		from Interfaces import Newport_PM_Interface
-		PM_inst = connect_to_PM(Power_meter_channel)
+		PM_inst = connect_to_PM(Power_meter_channel_1)
+		if Power_meter_channel_2 == 'A' or Power_meter_channel_2 == 'B':
+			two_facet_LIV = True
 	else:
 		raise Exception(colour.red+" "+Power_meter," is not set up as a power meter"+colour.end)
 	### Convert from mA to A
@@ -168,9 +177,11 @@ def LIV(device_name):
 		Source_step_5 = Source_step_5*1e-3
 		Source_start_5 = Source_start_5*1e-3
 		Source_stop_5 = Source_stop_5*1e-3
-	if ask_user_for_device_dimensions:
-		device_length = float(input("Enter the device length in mm:"))
-		injection_width = float(input("Enter the device width in um:"))
+	if ask_user_for_device_dimensions==True:
+		device_length = float(input(colour.yellow+" Enter the device length in mm:"+colour.end))
+		injection_width = float(input(colour.yellow+" Enter the device width in um:"+colour.end))
+	elif ask_user_for_device_dimensions == 'Width_Only':
+		injection_width = float(input(colour.yellow+" Enter the device width in um:"+colour.end))
 	current_area = device_length/10*injection_width/10000
 	### Sweep values and collect data
 	sweep_num = 0
@@ -241,18 +252,25 @@ def LIV(device_name):
 					time.sleep(0.1)
 					if Power_meter == 'K2520' and K2520_internal_sweep and Source_1 == 'K2520':
 						Source_input_list_1, voltage_list, power_list = Source_inst_1.sweep_current(Source_start_1, Source_step_1, Source_stop_1)
+						if waveform_1.capitalize() == 'Pulsed':
+							Source_inst_1.enable_init_continuous() #set continuous initiating again after sweep
 						### Remove data points where detector clipped
-						if max(power_list)>15e38:
-							last_point = power_list.index(next(i for i in power_list if i>15e38))
+						if max(power_list)>1.5e38:
+							last_point = power_list.index(next(i for i in power_list if i>1.5e38))
 							if last_point == 0:
 								raise Exception(colour.red+" Detector was maxed out from the first data point"+colour.end)
 							Source_input_list_1 = Source_input_list_1[:last_point] #[A]
 							voltage_list = voltage_list[:last_point] #[V]
 							power_list = power_list[:last_point] #[A]
+						power_list_2 = False
 					else:
 						Source_input_list_1 = [x for x in np.arange(Source_start_1,Source_stop_1+Source_step_1/2,Source_step_1)] #[A]
 						voltage_list = [0]*len(Source_input_list_1) #[V]
 						power_list = [0]*len(Source_input_list_1) #[W]
+						if two_facet_LIV:
+							power_list_2 = [0]*len(Source_input_list_1) #[W]
+						else:
+							power_list_2 = False
 						for i in range(len(Source_input_list_1)):
 							if i > 0:
 								Source_inst_1.set_value(Source_input_list_1[i])
@@ -261,16 +279,20 @@ def LIV(device_name):
 							if i == 0:
 								Source_inst_1.set_output('ON')
 							#delay for power meter to stabilize
-							if Source_1 == 'K2520':
-								time.sleep(0.5) #needs longer stabilization for voltage
-							else:
-								time.sleep(0.2)
+							time.sleep(0.2)
 							voltage_list[i] = Source_inst_1.read_value('Voltage')
 							power_list[i] = PM_inst.read_power()
+							if two_facet_LIV:
+								PM_inst.set_channel(Power_meter_channel_2)
+								time.sleep(0.1)
+								power_list_2[i] = PM_inst.read_power()
+								PM_inst.set_channel(Power_meter_channel_1)
+								time.sleep(0.1)
 							if i>0 and round(Source_input_list_1[i]*1e3)%pause_interval == 0:
 								if pausing_enabled:
 									input(colour.green+" "+str(round(Source_input_list_1[i]*1e3))+" mA: Pausing for mode profile capture. Press any key to continue..."+colour.end)
 						Source_inst_1.safe_turn_off()
+
 					### Name Output Files
 					scan_name = device_name
 					if Source_5.lower() != 'off':
@@ -296,15 +318,22 @@ def LIV(device_name):
 					[csv_location, png_location, scan_name] = get_file_locations(save_data, save_fig, characterization_directory, 'LIV', scan_name)
 					### Save data to file
 					if save_data:
-						full_data = np.zeros((len(Source_input_list_1), 3))
+						if two_facet_LIV:
+							full_data = np.zeros((len(Source_input_list_1), 4))
+							full_data[:,3] = power_list_2
+						else:
+							full_data = np.zeros((len(Source_input_list_1), 3))
 						full_data[:,0] = Source_input_list_1
 						full_data[:,1] = voltage_list
 						full_data[:,2] = power_list
-						np.savetxt(csv_location, full_data, delimiter=',', header='Current [A], Voltage [V], Power [W]', comments='')
+						if two_facet_LIV:
+							np.savetxt(csv_location, full_data, delimiter=',', header='Current [A], Voltage [V], Power Right [W], Power Left [W]', comments='')
+						else:
+							np.savetxt(csv_location, full_data, delimiter=',', header='Current [A], Voltage [V], Power [W]', comments='')
 						print(" Data saved to",csv_location)
 					### Plot data
 					if display_fig or save_fig:
-						fig = plot_LIV(device_name, power_list, Source_input_list_1, voltage_list, plot_current_density=plot_current_density, current_area=current_area)[0]
+						fig = plot_LIV(scan_name, power_list, Source_input_list_1, voltage_list, plot_current_density=plot_current_density, current_area=current_area, power2=power_list_2)[0]
 						if save_fig:
 							fig.savefig(png_location,bbox_inches='tight')
 							print(" Figure saved to",png_location)

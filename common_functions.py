@@ -3,7 +3,7 @@
 # analysis scripts 														#
 #																		#
 # Author: Trevor Stirling												#
-# Date: May 29, 2023													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import pyvisa
@@ -112,7 +112,7 @@ def connect_to_GPIB(device_name,parameters=[]):
 		device_type = 'Spectrum_anlyzer'
 	elif device_name == 'AQ6374':
 		from Interfaces import AQ6374_Interface
-		GPIB_address = 'GPIB0::21::INSTR' #SYSTEM > MY ADRS
+		GPIB_address = 'GPIB0::22::INSTR' #Should change this to be different from AQ6317B
 		rm = check_GPIB_connection(device_name, GPIB_address)
 		device_inst = AQ6374_Interface.AQ6374(rm, GPIB_address)
 		device_type = 'Spectrum_anlyzer'
@@ -131,11 +131,17 @@ def connect_to_GPIB(device_name,parameters=[]):
 		rm = check_GPIB_connection(device_name, GPIB_address)
 		device_inst = B2902A_Interface.B2902A(rm, GPIB_address, parameters[1], parameters[0])
 		device_type = 'Source'
-	elif device_name == 'AQ6317B':
-		from Interfaces import A86146B_Interface
+	elif device_name == 'A86146B':
+		from Interfaces import A8614x_Interface
 		GPIB_address = 'GPIB0::24::INSTR'
 		rm = check_GPIB_connection(device_name, GPIB_address)
-		device_inst = A86146B_Interface.A86146B(rm, GPIB_address)
+		device_inst = A8614x_Interface.A8614x(rm, GPIB_address)
+		device_type = 'Spectrum_anlyzer'
+	elif device_name == 'A86142A':
+		from Interfaces import A8614x_Interface
+		GPIB_address = 'GPIB0::20::INSTR'
+		rm = check_GPIB_connection(device_name, GPIB_address)
+		device_inst = A8614x_Interface.A8614x(rm, GPIB_address)
 		device_type = 'Spectrum_anlyzer'
 	elif device_name == 'K2520':
 		num_params = 7 #Source_mode,Source_channel,protection_voltage,protection_current,waveform,pulse_delay,pulse_width
@@ -210,10 +216,12 @@ def get_file_locations(save_data, save_fig, characterization_directory, subfolde
 			png_location = os.path.join(figure_directory,device_name + '.png')
 	return [csv_location, png_location, device_name]
 
-def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best_fit_numbers=True, plot_current_density=False, current_area=1):
+def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best_fit_numbers=True, plot_current_density=False, current_area=1, power2=False):
 	#If plotting current density, expects area to be [cm^-2]
 	#Calculate figure values
 	power = [(x - power[0])*1000 for x in power] #converts from [W] to [mW] and zeros background
+	if power2:
+		power2 = [(x - power2[0])*1000 for x in power2] #converts from [W] to [mW] and zeros background
 	current = [x*1000 for x in current] #converts from [A] to [mA]
 	#Curve fit to piecewise linear function
 	if len(power)<4:
@@ -259,24 +267,31 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 	ax1.tick_params(axis='y', labelcolor=plt_colour)
 	ax2 = ax1.twinx()
 	plt_colour = 'tab:red'
+	plt_colour_2 = 'tab:purple'
 	ax2.set_ylabel('Power [mW]', color=plt_colour)
 	if good_fit and show_best_fit:
 		if plot_current_density:
-			ax2.plot([i/current_area/1000/1000 for i in current_fit], piecewise_linear(current_fit,*params),'--',color='black')
+			ax2.plot([i/current_area/1000/1000 for i in current_fit], piecewise_linear(current_fit,*params),'--',color='black',label='_nolegend_')
 		else:
-			ax2.plot(current_fit, piecewise_linear(current_fit,*params),'--',color='black')
+			ax2.plot(current_fit, piecewise_linear(current_fit,*params),'--',color='black',label='_nolegend_')
 	if plot_current_density:
 		ax2.plot([i/current_area/1000/1000 for i in current], power, color=plt_colour)
 		x_label_string = 'Current Density [kA/cm^2]'
+		if power2:
+			ax2.plot([i/current_area/1000/1000 for i in current], power2, color=plt_colour_2)
 	else:
 		ax2.plot(current, power, color=plt_colour)
 		x_label_string = 'Current [mA]'
+		if power2:
+			ax2.plot(current, power2, color=plt_colour_2)
 	if good_fit and show_best_fit_numbers:
 		ax1.set_xlabel(x_label_string+'\n\nThreshold current = '+"{:.1f}".format(threshold_current)+' mA\nSlope efficiency = '+"{:.1f}".format(post_thresh_slope*1000)+' mW/A/facet')
 	else:
 		ax1.set_xlabel(x_label_string)
 	ax2.tick_params(axis='y', labelcolor=plt_colour)
 	plt.tight_layout()
+	if power2:
+		ax2.legend(['Right facet', 'Left facet'])
 	return [fig, threshold_current, post_thresh_slope, good_fit]
 
 def piecewise_linear(x, x0, b, m1, m2):

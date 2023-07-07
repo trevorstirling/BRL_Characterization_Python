@@ -20,7 +20,7 @@
 #																		#
 # Author: Trevor Stirling												#
 # Modified on Jan 4, 2022 by Anustup Das								#
-# Date: Sept 1, 2022													#
+# Date: July 6, 2023													#
 #########################################################################
 
 import numpy as np
@@ -61,8 +61,9 @@ class E4407B:
 		return frequency, power #GHz, dBm
 
 	def is_sweeping(self):
-		result = int(self.GPIB.query_ascii_values(':STAT:OPER?')[0]) #note: this clears the register after reading
-		#causing problems, look into this. Can bypass by just return 0
+		#result = int(self.GPIB.query_ascii_values(':STAT:OPER?')[0]) #note: this clears the register after reading
+		#causing problems, always return 0 for now and debug later
+		return 0
 		return result&8 == 8
 
 	def wait_for_sweeping(self):
