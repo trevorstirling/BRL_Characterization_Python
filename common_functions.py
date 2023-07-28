@@ -3,8 +3,10 @@
 # analysis scripts 														#
 #																		#
 # Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Date: July 21, 2023													#
 #########################################################################
+
+# Test Low Pass filter for autocorrelations
 
 import pyvisa
 import os
@@ -380,55 +382,92 @@ def envelope_indices(s, trough_reduction_factor=1, peak_reduction_factor=1):
 	peak_indices_reduced = peak_indices[[i+np.argmax(s[peak_indices[i:i+peak_reduction_factor]]) for i in range(0,len(peak_indices),peak_reduction_factor)]]
 	return trough_indices_reduced,peak_indices_reduced
 
-def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=20, plot_fit=True, plot_envelope=False, plot_lower=False, x_axis_calibrated=True, normalize=True):
-	if normalize:
+def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=20, plot_fit=True, plot_envelope=False, plot_lower=False, x_axis_calibrated=True, normalize=True, cutoff_freq=200e12):
+	fit_type = 'low_pass' #Should always be 'low_pass', left the option for 'envelope' to accomodate legacy code, but low_pass has been shown to be more mathematically sound
+	if normalize: #normalize to a peak of 8 for an interferometric autocorrelation
 		intensity_max = max(intensity)
-		intensity = [i/intensity_max for i in intensity]
-	intensity = np.array(intensity)
-	time = np.array(time)
-	lower_envelope_index, upper_envelope_index = envelope_indices(intensity, envelope_reduction_factor, envelope_reduction_factor)
-	#estimate upper envelope fitting parameters and fit
-	upper_offset_estimate = np.mean(intensity[upper_envelope_index[0:5]])
-	width_estimate = 200 #[fs]
-	max_index = np.argmax(intensity)
-	max_time = time[max_index]
-	upper_params,_ = curve_fit(SechSqr,time[upper_envelope_index],intensity[upper_envelope_index], p0=[upper_offset_estimate, 1-upper_offset_estimate, max_time, width_estimate])
-	FWHM = upper_params[3]*1.7627 #[fs]
-	if plot_lower:
-		#estimate lower envelope fitting parameters and fit
-		lower_offset_estimate = np.mean(intensity[lower_envelope_index[0:5]])
-		min_index = np.argmin(intensity)
-		min_time = time[min_index]
-		lower_params,_ = curve_fit(SechSqr,time[lower_envelope_index],intensity[lower_envelope_index], p0=[lower_offset_estimate, 0-upper_offset_estimate, min_time, FWHM])
-	#incease fitted curve resolution 
-	time_mesh = np.linspace(time[0],time[-1],1000)
-	#Format figure
-	fig, ax1 = plt.subplots()
-	plt.plot(time,intensity,color='0.8')
-	# legend_string = ["Measured Data","Sech^2"]
-	if x_axis_calibrated:
-		x_axis_text = 'Time [fs]'
-	else:
-		x_axis_text = 'Number of data points [uncalibrated]'
-	if plot_envelope:
-		plt.plot(time[upper_envelope_index],intensity[upper_envelope_index],color='0.1',label='_nolegend_')
+		intensity = [i*8/intensity_max for i in intensity]
+	intensity = np.array(intensity) #[A.U.]
+	time = np.array(time) #[fs]
+	if fit_type == 'envelope':
+		lower_envelope_index, upper_envelope_index = envelope_indices(intensity, envelope_reduction_factor, envelope_reduction_factor)
+		#estimate upper envelope fitting parameters and fit
+		upper_offset_estimate = np.mean(intensity[upper_envelope_index[0:5]])
+		width_estimate = 200 #[fs]
+		max_index = np.argmax(intensity)
+		max_time = time[max_index]
+		upper_params,_ = curve_fit(SechSqr,time[upper_envelope_index],intensity[upper_envelope_index], p0=[upper_offset_estimate, 1-upper_offset_estimate, max_time, width_estimate])
+		upper_params[3] = abs(upper_params[3]) #ensure width is positive
+		FWHM = upper_params[3]*1.7627 #[fs]
 		if plot_lower:
-			plt.plot(time[lower_envelope_index],intensity[lower_envelope_index],color='0.1',label='_nolegend_')
-	if plot_fit:
-		plt.plot(time_mesh,SechSqr(time_mesh,*upper_params))
+			#estimate lower envelope fitting parameters and fit
+			lower_offset_estimate = np.mean(intensity[lower_envelope_index[0:5]])
+			min_index = np.argmin(intensity)
+			min_time = time[min_index]
+			lower_params,_ = curve_fit(SechSqr,time[lower_envelope_index],intensity[lower_envelope_index], p0=[lower_offset_estimate, 0-upper_offset_estimate, min_time, FWHM])
+		#incease fitted curve resolution 
+		time_mesh = np.linspace(time[0],time[-1],1000)
+		#Format figure
+		fig, ax1 = plt.subplots()
+		plt.plot(time,intensity,color='0.8')
+		# legend_string = ["Measured Data","Sech^2"]
 		if x_axis_calibrated:
-			x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' fs\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' fs'
+			x_axis_text = 'Time [fs]'
 		else:
-			x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' data points\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' data points'
-		if plot_lower:
-			plt.plot(time_mesh,SechSqr(time_mesh,*lower_params))
+			x_axis_text = 'Number of data points [uncalibrated]'
+		if plot_envelope:
+			plt.plot(time[upper_envelope_index],intensity[upper_envelope_index],color='0.1',label='_nolegend_')
+			if plot_lower:
+				plt.plot(time[lower_envelope_index],intensity[lower_envelope_index],color='0.1',label='_nolegend_')
+		if plot_fit:
+			plt.plot(time_mesh,SechSqr(time_mesh,*upper_params))
 			if x_axis_calibrated:
-				x_axis_text += '\nLower autocorrelator sech$^2$ FWHM '+"{:.1f}".format(lower_params[3])+' fs\nCorresponding lower pulse FWHM '+"{:.1f}".format(lower_params[3]/1.54)+' fs'
+				x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' fs\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' fs'
 			else:
-				x_axis_text += '\nLower autocorrelator sech$^2$ FWHM '+"{:.1f}".format(lower_params[3])+' data points\nCorresponding lower pulse FWHM '+"{:.1f}".format(lower_params[3]/1.54)+' data points'
-	plt.xlabel(x_axis_text)
-	plt.ylabel('Intensity [A.U.]')
-	plt.title(device_name)
+				x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' data points\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' data points'
+			if plot_lower:
+				plt.plot(time_mesh,SechSqr(time_mesh,*lower_params))
+				if x_axis_calibrated:
+					x_axis_text += '\nLower autocorrelator sech$^2$ FWHM '+"{:.1f}".format(lower_params[3])+' fs\nCorresponding lower pulse FWHM '+"{:.1f}".format(lower_params[3]/1.54)+' fs'
+				else:
+					x_axis_text += '\nLower autocorrelator sech$^2$ FWHM '+"{:.1f}".format(lower_params[3])+' data points\nCorresponding lower pulse FWHM '+"{:.1f}".format(lower_params[3]/1.54)+' data points'
+		plt.xlabel(x_axis_text)
+		plt.ylabel('Intensity [A.U.]')
+		plt.title(device_name)
+	elif fit_type == 'low_pass':
+		#Filter
+		Intensity_freq = np.fft.rfft(intensity)
+		f = np.fft.rfftfreq(len(time),(time[1]-time[0])*1e-15)
+		Intensity_low_freq = [Intensity_freq[i] if f[i]<=cutoff_freq else 0 for i in range(len(Intensity_freq))]
+		intensity_low = np.fft.irfft(Intensity_low_freq)
+		#Fit
+		max_index = np.argmax(intensity_low)
+		max_time = time[max_index]
+		offset_estimate = abs(Intensity_freq[0])/len(intensity)
+		width_estimate = 100 #[fs]
+		filtered_params,_ = curve_fit(SechSqr,time,intensity_low, p0=[offset_estimate, 4-offset_estimate, max_time, width_estimate])
+		filtered_params[3] = abs(filtered_params[3]) #ensure width is positive
+		FWHM = filtered_params[3]*1.7627 #[fs]
+		#incease fitted curve resolution 
+		time_mesh = np.linspace(time[0],time[-1],1000)
+		#Format figure
+		fig, ax1 = plt.subplots()
+		plt.plot(time,intensity,color='0.8')
+		if x_axis_calibrated:
+			x_axis_text = 'Time [fs]'
+		else:
+			x_axis_text = 'Number of data points [uncalibrated]'
+		if plot_fit:
+			plt.plot(time_mesh,SechSqr(time_mesh,*filtered_params))
+			if x_axis_calibrated:
+				x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' fs\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' fs'
+			else:
+				x_axis_text += '\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' data points\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' data points'
+		plt.xlabel(x_axis_text)
+		plt.ylabel('Intensity [A.U.]')
+		plt.title(device_name)
+	else:
+		raise Exception(colour.red+colour.alert+"The autocorrelation fit type should be low_pass or envelope, but was "+str(fit_type)+colour.end)
 	return [fig,FWHM/1.54]
 
 def loading_bar(ratio_complete,total_length=50,terminate=False):
