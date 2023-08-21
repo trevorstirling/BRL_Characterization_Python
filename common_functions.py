@@ -3,10 +3,8 @@
 # analysis scripts 														#
 #																		#
 # Author: Trevor Stirling												#
-# Date: July 21, 2023													#
+# Date: Aug 21, 2023													#
 #########################################################################
-
-# Test Low Pass filter for autocorrelations
 
 import pyvisa
 import os
@@ -296,6 +294,20 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 		ax2.legend(['Right facet', 'Left facet'])
 	return [fig, threshold_current, post_thresh_slope, good_fit]
 
+def find_FW(x,y,width_y):
+	y = [i for i in y] #convert to list in case of numpy array
+	y_max_index = y.index(max(y))
+	for i in range(y_max_index,len(y)):
+		if y[i]<=width_y:
+			FW_end = x[i-1]
+			break
+	for i in range(y_max_index-1,-1,-1):
+		if y[i]<=width_y:
+			FW_start = x[i+1]
+			break
+	FWHM = FW_end-FW_start
+	return [FWHM,FW_start,FW_end]
+
 def piecewise_linear(x, x0, b, m1, m2):
 	condlist = [x < x0, x >= x0]
 	funclist = [lambda x: m1*x + b, lambda x: m1*x + b + m2*(x-x0)]
@@ -330,16 +342,8 @@ def plot_spectrum(device_name, x_data, power, show_max=False, show_max_numbers=T
 		SMSR_text = plt.text(SM_x,SM_power+SMSR/2,' SMSR = '+str(round(SMSR,2))+' dB ')
 		if (x_data[-1]+x_data[0])/2 < SM_x:
 			plt.setp(SMSR_text,'horizontalalignment','right')
-	HM = max(power)-3
-	for i in range(len(power)):
-		if power[i]>HM:
-			FW_start = x_data[i]
-			break
-	for i in range(len(power)-1,-1,-1):
-		if power[i]>HM:
-			FW_end = x_data[i]
-			break
-	FWHM = FW_end-FW_start
+	HM = max(power)-10*math.log10(2)
+	[FWHM,FW_start,FW_end] = find_FW(x_data,power,HM)
 	if show_FWHM:
 		FWHM_arrow_length = (x_data[-1]-x_data[0])/6
 		plt.annotate(text='', xy=(max(FW_start-FWHM_arrow_length,x_data[0]),HM), xytext=(FW_start,HM), arrowprops=dict(arrowstyle='<-'))
@@ -375,6 +379,7 @@ def SechSqr(x, offset, amplitude, center, width):
 
 def envelope_indices(s, trough_reduction_factor=1, peak_reduction_factor=1):
 	#Finds the indices of every trough and peak, or every trough_reduction_factor troughs and peak_reduction_factor peaks.
+	s = np.array(s)
 	extrema = -np.diff(np.sign(np.diff(s)))
 	trough_indices = (extrema < 0).nonzero()[0]+1
 	trough_indices_reduced = trough_indices[[i+np.argmin(s[trough_indices[i:i+trough_reduction_factor]]) for i in range(0,len(trough_indices),trough_reduction_factor)]]
@@ -493,3 +498,26 @@ def ordinal_indicator(num):
 		return 'rd'
 	else:
 		return 'th'
+
+def matmul2x2(A,B):
+	if len(A) == 2 and len(B) == 2:
+		if len(A[0]) == 2 and len(A[1]) == 2 and len(B[0]) == 2 and len(B[1]) == 2:
+			return [[A[0][0]*B[0][0]+A[0][1]*B[1][0],A[0][0]*B[0][1]+A[0][1]*B[1][1]],[A[1][0]*B[0][0]+A[1][1]*B[1][0],A[1][0]*B[0][1]+A[1][1]*B[1][1]]]
+	else:
+		raise Exception("A and B must both be 2x2 matrices (as nested lists)")
+
+def calculate_reflectivity(n_vector,d_vector,lambda_vector):
+	#Calculates the reflectivity for a wave travelling at normal incidence
+	r = [0 for _ in lambda_vector]
+	for j in range(len(lambda_vector)):
+		k0 = 2*math.pi/lambda_vector[j]
+		k_vector = [k0*n for n in n_vector]
+		M = [[1,0],[0,1]]
+		for i in range(1,len(n_vector)-1):
+			k = k_vector[i]
+			d = d_vector[i]
+			M = matmul2x2(M,[[math.cos(k*d),-1/k*math.sin(k*d)],[k*math.sin(k*d),math.cos(k*d)]])
+		gamma_s = k_vector[0]/1j
+		gamma_t = k_vector[-1]/1j
+		r[j] = (gamma_s*M[0][0]-gamma_s*gamma_t*M[0][1]+M[1][0]-gamma_t*M[1][1])/(gamma_s*M[0][0]-gamma_s*gamma_t*M[0][1]-M[1][0]+gamma_t*M[1][1])
+	return r
