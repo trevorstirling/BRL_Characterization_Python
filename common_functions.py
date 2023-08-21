@@ -301,10 +301,14 @@ def find_FW(x,y,width_y):
 		if y[i]<=width_y:
 			FW_end = x[i-1]
 			break
+	if i == len(y)-1:
+		FW_end = x[-1]
 	for i in range(y_max_index-1,-1,-1):
 		if y[i]<=width_y:
 			FW_start = x[i+1]
 			break
+	if i == 0:
+		FW_start = x[0]
 	FWHM = FW_end-FW_start
 	return [FWHM,FW_start,FW_end]
 
