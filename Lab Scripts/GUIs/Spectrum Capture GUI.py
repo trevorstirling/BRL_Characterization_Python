@@ -3,13 +3,14 @@
 # GUI added by Eman Shayeb                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 12, 2023                                                   #
+# Date: Sept 14, 2023                                                   #
 #########################################################################
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from common_functions import connect_to_GPIB,get_file_locations,plot_spectrum,BluePSGButton
+from GUI_common_functions import BluePSGButton,enforce_number
 import PySimpleGUI as psg
 
 symbol_open = '▾'
@@ -25,7 +26,7 @@ def GUI():
 	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(5,1), enable_events=True), BluePSGButton('Set λ [nm]'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]'), BluePSGButton('Repeat')]]
 	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
-	[psg.Checkbox('Show FWHM', size=(10,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(10,1), key='SMSR', default=False)],
+	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False)],
 	[BluePSGButton('Sweep'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture'), BluePSGButton('Exit')], #push adds flexible whitespace
 	[psg.Text(symbol_closed, enable_events=True, key='more_SA_options'),psg.Text('More SA Functions')],
 	[psg.pin(psg.Column(SA_options,key='SA_options',visible=more_SA_options_open))],
@@ -50,9 +51,9 @@ def GUI():
 		elif event == 'Spectrum_analyzer':
 			update_channels(window, values['Spectrum_analyzer'])
 		elif event == 'Capture':
-			Spectrum_Analyzer_Capture(values)
+			Spectrum_Analyzer_Capture(window,values)
 		elif event == 'Sweep':
-			sweep_SA(values)
+			sweep_SA(window, values)
 		#open hidden sections
 		elif event == 'more_SA_options':
 			more_SA_options_open = not more_SA_options_open
@@ -63,19 +64,9 @@ def GUI():
 			window['SA_options'].update(visible=more_SA_options_open)
 		#data validation
 		elif event == 'wavelength' and len(values['wavelength']):
-			if values['wavelength'][-1] not in ('.0123456789'):
-				value = values['wavelength'][:-1]
-				window['wavelength'].update(value)
-			elif '.' in values['wavelength'][:-1] and values['wavelength'][-1] == '.':
-				value = values['wavelength'][:-1]
-				window['wavelength'].update(value)
+			enforce_number(window,values,event)
 		elif event == 'span' and len(values['span']):
-			if values['span'][-1] not in ('.0123456789'):
-				value = values['span'][:-1]
-				window['span'].update(value)
-			elif '.' in values['span'][:-1] and values['span'][-1] == '.':
-				value = values['span'][:-1]
-				window['span'].update(value)
+			enforce_number(window,values,event)
 	window.close()
 
 def update_channels(window, spectrum_analyzer):
@@ -100,15 +91,19 @@ def set_span(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	spectrum_analyzer_inst.set_span(values['span'])
 
-def sweep_SA(values):
+def sweep_SA(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
-	spectrum_analyzer_inst.sweep(values['Channel'])
+	print(" Sweeping...")
+	window.refresh()
+	spectrum_analyzer_inst.sweep(values['Channel'], print_status=False)
+	print(" Sweep complete")
+	window.refresh()
 
 def sweep_continuously(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	spectrum_analyzer_inst.sweep_continuous(1)
 
-def Spectrum_Analyzer_Capture(values):
+def Spectrum_Analyzer_Capture(window,values):
 	### Get parameters from GUI
 	device_name = values['Device_name']
 	spectrum_analyzer = values['Spectrum_analyzer']
@@ -133,7 +128,11 @@ def Spectrum_Analyzer_Capture(values):
 	if spectrum_analyzer_inst.is_sweeping():
 		psg.popup("Spectrum Analyzer is currently sweeping. Stop before capturing.")
 		return
-	x_data, power = spectrum_analyzer_inst.capture(spectrum_analyzer_channel)
+	print(" Capturing...")
+	window.refresh()
+	x_data, power = spectrum_analyzer_inst.capture(spectrum_analyzer_channel,print_status=False)
+	print(" Capture complete")
+	window.refresh()
 	#Save data to file
 	if save_data:
 		full_data = np.zeros((len(power), 2))
@@ -144,6 +143,7 @@ def Spectrum_Analyzer_Capture(values):
 		else:
 			np.savetxt(csv_location, full_data , delimiter=',', header='Wavelength [nm], Power [dBm]', comments='')
 		print(" Data saved to",csv_location)
+		window.refresh()
 	#Plot data
 	if display_fig or save_fig:
 		if spectrum_analyzer_type == 'ESA':
@@ -153,12 +153,15 @@ def Spectrum_Analyzer_Capture(values):
 		if save_fig:
 			fig.savefig(png_location,bbox_inches='tight')
 			print(" Figure saved to",png_location)
+			window.refresh()
 		if display_fig:
 			print(" Displaying figure. Close figure to resume.")
+			window.refresh()
 			plt.show()
 		else:
 			plt.close()
 	print(" Disconnected from Spectrum Analyzer")
+	window.refresh()
 
 if __name__ == "__main__":
    GUI()

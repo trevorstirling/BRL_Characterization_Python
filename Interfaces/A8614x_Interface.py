@@ -1,26 +1,25 @@
 #########################################################################
-# Functions to interface with A86146B and A86142A optical spectrum 		#
-#   analyzers															#
-# OSA common functions:													#
-# -initialize()															#
-# -capture()															#
-# -is_sweeping()														#
-# -wait_for_sweeping()													#
-# -sweep()																#
-# -set_ref_level()														#
-# -set_y_scale()														#
-# -set_wavelength()														#
-# -set_span()															#
-# -set_rbw()															#
-# -peak_to_center()														#
-# -sweep_continuous()													#
-# -read_value()															#
-#																		#
-# A86146B specific functions:											#
-# -set_vbw()															#
-#																		#
-# Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Functions to interface with A86146B optical spectrum analyzer         #
+# OSA common functions:                                                 #
+# -initialize()                                                         #
+# -capture()                                                            #
+# -is_sweeping()                                                        #
+# -wait_for_sweeping()                                                  #
+# -sweep()                                                              #
+# -set_ref_level()                                                      #
+# -set_y_scale()                                                        #
+# -set_wavelength()                                                     #
+# -set_span()                                                           #
+# -set_rbw()                                                            #
+# -peak_to_center()                                                     #
+# -sweep_continuous()                                                   #
+# -read_value()                                                         #
+#                                                                       #
+# A86146B specific functions:                                           #
+# -set_vbw()                                                            #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 14, 2022                                                   #
 #########################################################################
 
 ### Need to test is_sweeping(), wait_for_sweeping(), and sweep()
@@ -49,10 +48,11 @@ class A8614x:
 		self.set_rbw(.06) #nm
 		self.set_vbw(2000) #Hz
 	
-	def capture(self, channel):
+	def capture(self, channel, print_status=True):
 		if channel not in ['A','B','C','D','E','F']:
 			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-F"+colour.end)
-		print(" Capturing...")
+		if print_status:
+			print(" Capturing...")
 		start_output = self.GPIB.query_ascii_values('TRACE:DATA:X:STAR? TR'+channel)
 		stop_output = self.GPIB.query_ascii_values('TRACE:DATA:X:STOP? TR'+channel)
 		start = start_output[0]*1e9
@@ -63,7 +63,8 @@ class A8614x:
 		n = len(power)
 		step = (stop-start)/(n-1)
 		wavelength = np.arange(start, stop + step/2, step) #end value just past stop to include end point
-		print(" Capture complete")
+		if print_status:
+			print(" Capture complete")
 		return wavelength, power
 	
 	def is_sweeping(self):
@@ -79,7 +80,7 @@ class A8614x:
 		self.GPIB.write('*OPC?')
 		self.GPIB.write('*WAI')
 	
-	def sweep(self ,channel='N/A'):
+	def sweep(self ,channel='N/A', print_status=True):
 		#if passed a channel, only sweep that channel
 		channel_list = ['A','B','C','D','E','F']
 		if channel in channel_list:
@@ -89,10 +90,12 @@ class A8614x:
 			self.GPIB.write('TRAC:FEED:CONT TR'+channel+', ALW')
 		elif channel != 'N/A':
 			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-F (or left empty)"+colour.end)
-		print(" Sweeping...")
+		if print_status:
+			print(" Sweeping...")
 		self.GPIB.write('INIT:IMM')
 		self.wait_for_sweeping()
-		print(" Sweep complete")
+		if print_status:
+			print(" Sweep complete")
 
 	def set_ref_level(self, ref_level):
 		self.GPIB.write('DISP:WIND:TRAC:Y:SCAL:RLEV '+str(ref_level)+' dBm')
@@ -112,13 +115,14 @@ class A8614x:
 	def set_vbw(self, vbw):
 		self.GPIB.write('SENS:BWID:VID '+str(vbw)+' Hz') #0.1 to 3000 Hz
 		
-	def peak_to_center(self):
+	def peak_to_center(self, print_status=True):
 		self.GPIB.write('CALC1:MARK1:MAX')#marker to peak
 		self.GPIB.write('CALC1:MARK1:SCEN')#marker to center
 		wavelength = self.GPIB.query_ascii_values('CALC1:MARK1:X?')
 		power = self.GPIB.query_ascii_values('CALC1:MARK1:Y?')
-		print(" Wavelength = "+"{:.2f}".format(wavelength[0]*1e9)+" nm")
-		print(" Power = "+"{:.2f}".format(power[0])+" dBm")
+		if print_status:
+			print(" Wavelength = "+"{:.2f}".format(wavelength[0]*1e9)+" nm")
+			print(" Power = "+"{:.2f}".format(power[0])+" dBm")
 		
 	def sweep_continuous(self, status):
 		if status == 1:

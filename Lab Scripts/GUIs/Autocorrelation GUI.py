@@ -6,7 +6,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 12, 2023                                                   #
+# Date: Sept 14, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -15,7 +15,8 @@ from matplotlib.animation import FuncAnimation
 import sys
 import os
 import time
-from common_functions import colour,connect_to_Piezo,connect_to_GPIB,get_file_locations,plot_autocorrelator,loading_bar,BluePSGButton
+from common_functions import colour,connect_to_Piezo,connect_to_GPIB,get_file_locations,plot_autocorrelator
+from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min
 import PySimpleGUI as psg
 
 def GUI():
@@ -66,57 +67,17 @@ def GUI():
 			plt.style.use('default')
 		#data validation
 		elif event == 'num_points' and len(values['num_points']):
-			if values['num_points'][-1] not in ('0123456789'):
-				value = values['num_points'][:-1]
-				window['num_points'].update(value)
-			else:
-				value = values['num_points']
-			if len(value):
-				try:
-					value = int(value)
-					if value > 16383:
-						window['num_points'].update(16383)
-				except:
-					window['num_points'].update(0)
+			enforce_number(window,values,event,decimal_allowed=False)
+			enforce_max_min(window,values,event,16383,0)
 		elif event == 'Piezo_start_loc':
-			if len(values['Piezo_start_loc'])>1 and values['Piezo_start_loc'][-1] not in ('0123456789'):
-				value = values['Piezo_start_loc'][:-1]
-				window['Piezo_start_loc'].update(value) 
-			elif len(values['Piezo_start_loc'])>0 and values['Piezo_start_loc'][-1] not in ('-0123456789'):
-				value = values['Piezo_start_loc'][:-1]
-				window['Piezo_start_loc'].update(value)
+			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
 		elif event == 'time_scale_factor' and len(values['time_scale_factor']):
-			if values['time_scale_factor'][-1] not in ('.0123456789'):
-				value = values['time_scale_factor'][:-1]
-				window['time_scale_factor'].update(value)
-			elif '.' in values['time_scale_factor'][:-1] and values['time_scale_factor'][-1] == '.':
-				value = values['time_scale_factor'][:-1]
-				window['time_scale_factor'].update(value)
+			enforce_number(window,values,event)
 		elif event == 'reverse_correction_factor' and len(values['reverse_correction_factor']):
-			if values['reverse_correction_factor'][-1] not in ('.0123456789'):
-				value = values['reverse_correction_factor'][:-1]
-				window['reverse_correction_factor'].update(value)
-			elif '.' in values['reverse_correction_factor'][:-1] and values['reverse_correction_factor'][-1] == '.':
-				value = values['reverse_correction_factor'][:-1]
-				window['reverse_correction_factor'].update(value)
+			enforce_number(window,values,event)
 		elif event == 'step_amplitude' and len(values['step_amplitude']):
-			if len(values['step_amplitude'])>1 and values['step_amplitude'][-1] not in ('0123456789'):
-				value = values['step_amplitude'][:-1]
-				window['step_amplitude'].update(value)
-			elif len(values['step_amplitude'])>0 and values['step_amplitude'][-1] not in ('-0123456789'):
-				value = values['step_amplitude'][:-1]
-				window['step_amplitude'].update(value)
-			else:
-				value = values['step_amplitude']
-			if len(value) and value != '-':
-				try:
-					value = int(value)
-					if value > 50:
-						window['step_amplitude'].update(50)
-					elif value < -50:
-						window['step_amplitude'].update(-50)
-				except:
-					window['step_amplitude'].update(0)
+			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
+			enforce_max_min(window,values,event,50,-50)
 	window.close()
 
 def Monitor_power(values):

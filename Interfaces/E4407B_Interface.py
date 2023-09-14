@@ -1,26 +1,25 @@
 #########################################################################
-# Functions to interface with AQ6317B optical spectrum analyzer			#
-# OSA common functions:													#
-# -initialize()															#
-# -capture()															#
-# -is_sweeping()														#
-# -wait_for_sweeping()													#
-# -sweep()																#
-# -set_ref_level()														#
-# -set_y_scale()														#
-# -set_wavelength()														#
-# -set_span()															#
-# -set_rbw()															#
-# -peak_to_center()														#
-# -sweep_continuous()													#
-# -read_value()															#
-#																		#
-# E4407B specific functions:											#
-# -set_vbw()															#
-#																		#
-# Author: Trevor Stirling												#
-# Modified on Jan 4, 2022 by Anustup Das								#
-# Date: July 6, 2023													#
+# Functions to interface with AQ6317B optical spectrum analyzer         #
+# OSA common functions:                                                 #
+# -initialize()                                                         #
+# -capture()                                                            #
+# -is_sweeping()                                                        #
+# -wait_for_sweeping()                                                  #
+# -sweep()                                                              #
+# -set_ref_level()                                                      #
+# -set_y_scale()                                                        #
+# -set_wavelength()                                                     #
+# -set_span()                                                           #
+# -set_rbw()                                                            #
+# -peak_to_center()                                                     #
+# -sweep_continuous()                                                   #
+# -read_value()                                                         #
+#                                                                       #
+# E4407B specific functions:                                            #
+# -set_vbw()                                                            #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 14, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -48,8 +47,9 @@ class E4407B:
 		self.set_rbw(1000) #Hz
 		self.set_vbw(2000) #Hz
 	
-	def capture(self, channel):
-		print(" Capturing...")
+	def capture(self, channel, print_status=True):
+		if print_status:
+			print(" Capturing...")
 		self.GPIB.write(':CALC:NTD 0;:FORM ASC;:FORM:BORD NORM') #command from page 278
 		power = self.GPIB.query_ascii_values(':TRAC? TRACE'+str(channel))
 		start = self.GPIB.query_ascii_values(':FREQ:STAR?')[0]
@@ -57,20 +57,21 @@ class E4407B:
 		step = span/(len(power)-1)
 		frequency = np.arange(start, start+span+step, step)
 		frequency = [x/1e9 for x in frequency]
-		print(" Capture complete")
+		if print_status:
+			print(" Capture complete")
 		return frequency, power #GHz, dBm
 
 	def is_sweeping(self):
 		#result = int(self.GPIB.query_ascii_values(':STAT:OPER?')[0]) #note: this clears the register after reading
 		#causing problems, always return 0 for now and debug later
 		return 0
-		return result&8 == 8
+		#return result&8 == 8
 
 	def wait_for_sweeping(self):
 		if self.is_sweeping():
 			self.GPIB.query('*OPC?')
 			
-	def sweep(self, channel='N/A'):
+	def sweep(self, channel='N/A', print_status=True):
 		#if passed a channel, only sweep that channel
 		channel_list = ['1','2','3']
 		if channel in channel_list:
@@ -78,11 +79,13 @@ class E4407B:
 				if chan != channel:
 					self.GPIB.write(':TRAC'+channel+':MODE BLAN')
 			self.GPIB.write(':TRAC'+channel+':MODE WRIT')
-		print(" Sweeping...")
+		if print_status:
+			print(" Sweeping...")
 		self.sweep_continuous(0)
 		self.GPIB.write(':INIT')
 		self.wait_for_sweeping()
-		print(" Sweep complete")
+		if print_status:
+			print(" Sweep complete")
 
 	def set_ref_level(self, ref_level):
 		self.GPIB.write(':DISP:WIND:TRAC:Y:SCAL:RLEV '+str(ref_level)) #-149.9 to 55 dBm, page 275 
@@ -102,13 +105,14 @@ class E4407B:
 	def set_vbw(self, vbw):
 		self.GPIB.write(':SENS:BWID:VID '+str(vbw)) #1 to 3000 Hz, page 306
 
-	def peak_to_center(self):
+	def peak_to_center(self, print_status=True):
 		self.GPIB.write(':CALC:MARK1:MAX')
 		frequency = self.GPIB.query_ascii_values(':CALC:MARK1:X?')[0]
 		self.set_frequency(frequency)
 		power = self.GPIB.query_ascii_values(':CALC:MARK1:Y?')[0]
-		print(" Frequency = "+"{:.2f}".format(frequency/1e9)+" GHz")
-		print(" Power = "+"{:.2f}".format(power)+" dBm")
+		if print_status:
+			print(" Frequency = "+"{:.2f}".format(frequency/1e9)+" GHz")
+			print(" Power = "+"{:.2f}".format(power)+" dBm")
 
 	def sweep_continuous(self, status):
 		self.GPIB.write(':INIT:CONT '+str(status))

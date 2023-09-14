@@ -1,8 +1,8 @@
 #########################################################################
-# Script to test spectrum analyzer code works properly					#
-#																		#
-# Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Script to test spectrum analyzer code works properly                  #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 14, 2023                                                   #
 #########################################################################
 
 import sys
@@ -121,7 +121,7 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 		print(colour.red+" Resolution Bandwidth Test: FAILED"+colour.end)
 	test_count += 1
 	if spectrum_analyzer == 'AQ6317B' or spectrum_analyzer == 'AQ6374':
-		#Sensitivity Test - for AQ6317B Only
+		#Sensitivity Test - for AQ6317B or AQ6374 only
 		value_1_set = 'HIGH1'
 		value_2_set = 'MID'
 		spectrum_analyzer_inst.set_sensitivity(value_1_set)

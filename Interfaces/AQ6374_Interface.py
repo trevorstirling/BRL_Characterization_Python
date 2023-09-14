@@ -1,25 +1,25 @@
 #########################################################################
-# Functions to interface with AQ6374 optical spectrum analyzer			#
-# OSA common functions:													#
-# -initialize()															#
-# -capture()															#
-# -is_sweeping()														#
-# -wait_for_sweeping()													#
-# -sweep()																#
-# -set_ref_level()														#
-# -set_y_scale()														#
-# -set_wavelength()														#
-# -set_span()															#
-# -set_rbw()															#
-# -peak_to_center()														#
-# -sweep_continuous()													#
-# -read_value()															#
-#																		#
-# AQ6374 specific functions:											#
-# -set_sensitivity()													#
-#																		#
-# Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Functions to interface with AQ6374 optical spectrum analyzer          #
+# OSA common functions:                                                 #
+# -initialize()                                                         #
+# -capture()                                                            #
+# -is_sweeping()                                                        #
+# -wait_for_sweeping()                                                  #
+# -sweep()                                                              #
+# -set_ref_level()                                                      #
+# -set_y_scale()                                                        #
+# -set_wavelength()                                                     #
+# -set_span()                                                           #
+# -set_rbw()                                                            #
+# -peak_to_center()                                                     #
+# -sweep_continuous()                                                   #
+# -read_value()                                                         #
+#                                                                       #
+# AQ6374 specific functions:                                            #
+# -set_sensitivity()                                                    #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 14, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -49,10 +49,11 @@ class AQ6374:
 		self.set_rbw(.1) #nm
 		self.set_sensitivity('MID') #MID, HIGH1, HIGH2, or HIGH3
 	
-	def capture(self, channel):
+	def capture(self, channel, print_status=True):
 		if channel not in ['A','B','C','D','E','F','G']:
 			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-G"+colour.end)
-		print(" Capturing...")
+		if print_status:
+			print(" Capturing...")
 		power = np.array(self.GPIB.query_ascii_values(':TRAC:DATA:Y? TR'+channel)) #Level data
 		wavelength = np.array(self.GPIB.query_ascii_values(':TRAC:DATA:X? TR'+channel)) #Wavelength data
 		wavelength = wavelength*1e9 #convert to nm
@@ -63,7 +64,8 @@ class AQ6374:
 		for i in range(len(power)):
 			if power[i] == -210:
 				power[i] = -math.inf
-		print(" Capture complete")
+		if print_status:
+			print(" Capture complete")
 		return wavelength, power #nm, dBm
             
 	def is_sweeping(self):
@@ -81,7 +83,7 @@ class AQ6374:
 			time.sleep(1)
 			sweeping = self.is_sweeping()
 
-	def sweep(self, channel='N/A'):
+	def sweep(self, channel='N/A', print_status=True):
 		#if passed a channel, only sweep that channel
 		channel_list = ['A','B','C','D','E','F','G']
 		if channel in channel_list:
@@ -91,10 +93,12 @@ class AQ6374:
 			self.GPIB.write(':TRAC:ATTR:TR'+channel+' WRIT')
 		elif channel != 'N/A':
 			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-G (or left empty)"+colour.end)
-		print(" Sweeping...")
+		if print_status:
+			print(" Sweeping...")
 		self.GPIB.write(':INIT:SMOD 1;:INIT')
 		self.wait_for_sweeping()
-		print(" Sweep complete")
+		if print_status:
+			print(" Sweep complete")
 	
 	def set_ref_level(self, ref_level):
 		self.GPIB.write(':DISP:WIND:TRAC:Y1:SCAL:RLEV '+str(ref_level)) #-90 to 20 dBm
@@ -123,15 +127,16 @@ class AQ6374:
 		else:
 			raise Exception(colour.red+colour.alert+" "+str(sensitivity)+" is not a valid sensitivity setting"+colour.end)
 
-	def peak_to_center(self):
+	def peak_to_center(self, print_status=True):
 		self.GPIB.write(':CALC:MARK:MAX')
-		wavelength = float(self.GPIB.query_ascii_values(':CALC:MARK:X? 0')[0])
+		wavelength = float(self.GPIB.query_ascii_values(':CALC:MARK:X? 0')[0])*1e9
 		self.GPIB.write(':CALC:MARK:MAX:SCEN')
 		self.sweep()
 		self.GPIB.write(':CALC:MARK:X 0,'+str(wavelength)+'nm')
 		power = float(self.GPIB.query_ascii_values(':CALC:MARK:Y? 0')[0])
-		print(" Wavelength = "+"{:.2f}".format(wavelength)+" nm")
-		print(" Power = "+"{:.2f}".format(power)+" dBm")
+		if print_status:
+			print(" Wavelength = "+"{:.2f}".format(wavelength)+" nm")
+			print(" Power = "+"{:.2f}".format(power)+" dBm")
 
 	def sweep_continuous(self, status):
 		if status == 1:
