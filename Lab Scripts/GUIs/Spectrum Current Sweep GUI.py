@@ -4,15 +4,15 @@
 # GUI added by Eman Shayeb                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 20, 2023                                                   #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import time
-from common_functions import connect_to_PM,connect_to_GPIB,get_file_locations,plot_spectrum
-from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button
+from common_functions import connect_to_PM,connect_to_GPIB,plot_spectrum
+from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI
 import PySimpleGUI as psg
 
 font = 'Tahoma'
@@ -466,7 +466,9 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 								scan_name += '_'+str(round(Source_input_list_1[i1]*1e3))+'mA'
 							elif Source_1_mode == 'Voltage':
 								scan_name += '_'+str(round(Source_input_list_1[i1]*10)/10)+'V'
-						[csv_location, png_location, scan_name] = get_file_locations(save_data, save_fig, characterization_directory, 'Spectrum', scan_name)
+						[csv_location, png_location, scan_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Spectrum', scan_name)
+						if scan_name == '-NULL-':
+							return
 						#Save data
 						if save_data:
 							full_data = np.zeros((len(power), 2))

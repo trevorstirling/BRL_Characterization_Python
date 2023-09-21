@@ -6,8 +6,10 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 20, 2023                                                   #
 #########################################################################
+
+#Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,8 +17,8 @@ from matplotlib.animation import FuncAnimation
 import sys
 import os
 import time
-from common_functions import colour,connect_to_Piezo,connect_to_GPIB,get_file_locations,plot_autocorrelator
-from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min
+from common_functions import colour,connect_to_Piezo,connect_to_GPIB,plot_autocorrelator
+from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min,get_file_locations_GUI
 import PySimpleGUI as psg
 
 def GUI():
@@ -26,16 +28,16 @@ def GUI():
 	#Define layout
 	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Push(),psg.Text('--------------- Lock-in Amplifier Options ---------------',font=('Tahoma', 20)),psg.Push()],
-	[psg.Text('Lock-in Amplifier:'), psg.Combo(['SR830'], default_value='SR830', size=(8,1), enable_events=True, readonly=True, key='Lock-in'), psg.Text('Time Constant:'), psg.Combo(['10 μs','30 μs','100 μs','300 μs','1 ms','3 ms','10 ms','30 ms','100 ms','300 ms','1 s','3 s','10 s','30 s','100 s','300 s','1000 s','3000 s','10,000 s','30,000 s'], default_value='30 μs', size=(7,1), readonly=True, key='Time_constant'), psg.Text('Sampling Rate:'), psg.Combo(['62.5 mHz','125 mHz','250 mHz','500 mHz','1 Hz','2 Hz','4 Hz','8 Hz','16 Hz','32 Hz','64 Hz','128 Hz','256 Hz','512 Hz'], default_value='512 Hz', size=(8,1), readonly=True, key='Sampling_rate')],
+	[psg.Text('Lock-in Amplifier:'), psg.Combo(['SR830'], default_value='SR830', size=(8,1), enable_events=True, readonly=True, key='Lock-in'), psg.Text('Time Constant:'), psg.Combo(['10 μs','30 μs','100 μs','300 μs','1 ms','3 ms','10 ms','30 ms','100 ms','300 ms','1 s','3 s','10 s','30 s','100 s','300 s','1000 s','3000 s','10,000 s','30,000 s'], default_value='30 μs', size=(7,1), readonly=True, key='Time_constant')],
+	[psg.Text('Number of Points:'), psg.InputText('16000', key='num_points', size=(8,1), enable_events=True), psg.Text('Sampling Rate:'), psg.Combo(['62.5 mHz','125 mHz','250 mHz','500 mHz','1 Hz','2 Hz','4 Hz','8 Hz','16 Hz','32 Hz','64 Hz','128 Hz','256 Hz','512 Hz'], default_value='512 Hz', size=(8,1), enable_events=True, readonly=True, key='Sampling_rate'), psg.Text("Approx time: "+str(round(16000/512))+"s", key='approx_time')],
 	[psg.Push(),psg.Text('--------------- Piezo Options ---------------',font=('Tahoma', 20)),psg.Push()],
-	[psg.Text('Piezo:'), psg.Combo(['Newport'], default_value='Newport', size=(8,1), enable_events=True, readonly=True, key='Piezo'), psg.Text('Speed:'), psg.Combo([5,100,666,1700], default_value=100, size=(4,1), readonly=True, key='Piezo_speed'), psg.Text('Hz'),psg.Text('  Channel:'), psg.Combo([1,2,3,4], default_value=1, size=(2,1), readonly=True, key='Piezo_channel'),psg.Text('Axis:'), psg.Combo([1,2], default_value=1, size=(2,1), readonly=True, key='Piezo_axis'),psg.Text("Step Amplitude"), psg.InputText('35', key='step_amplitude', size=(3,1), enable_events=True)],
-	[psg.Text('Piezo Port:'), psg.InputText('COM3', key='piezo_port', size=(5,1)), psg.Checkbox('Return to start (Experimental)', size=(26,1), key='return_to_start', default=False, enable_events=True),psg.Text("Reverse Correction Factor", key='reverse_factor_text', visible=False), psg.InputText('1', key='reverse_correction_factor', size=(6,1), enable_events=True, visible=False)],
-	[psg.Push(),psg.Text('--------------- Scan Range Options ---------------',font=('Tahoma', 20)),psg.Push()],
-	[psg.Text('Number of Points:'), psg.InputText('16000', key='num_points', size=(8,1), enable_events=True), psg.Text('Move before scan:'), psg.InputText('-5000', key='Piezo_start_loc', size=(8,1), enable_events=True), psg.Text('steps')],
+	[psg.Text('Piezo:'), psg.Combo(['Newport'], default_value='Newport', size=(8,1), enable_events=True, readonly=True, key='Piezo'), psg.Text('Speed:'), psg.Combo([5,100,666,1700], default_value=100, size=(4,1), readonly=True, key='Piezo_speed'), psg.Text('Hz'),psg.Text('  Channel:'), psg.Combo([1,2,3,4], default_value=1, size=(2,1), readonly=True, key='Piezo_channel'),psg.Text('Axis:'), psg.Combo([1,2], default_value=1, size=(2,1), readonly=True, key='Piezo_axis'),psg.Text("Step Amplitude:", visible=False), psg.InputText('50', key='step_amplitude', size=(3,1), enable_events=True, visible=False), psg.Text('Piezo Port:'), psg.InputText('COM3', key='piezo_port', size=(5,1))],
+	[psg.Text('Move before scan:'), psg.InputText('-1500', key='Piezo_start_loc', size=(8,1), enable_events=True), psg.Text('steps'), psg.Checkbox('Return to start', size=(15,1), key='return_to_start', default=True, enable_events=True),psg.Text("Reverse Correction Factor", key='reverse_factor_text', visible=True), psg.InputText('0.8', key='reverse_correction_factor', size=(5,1), enable_events=True, visible=True)],
 	[psg.Push(),psg.Text('--------------- Plot Options ---------------',font=('Tahoma', 20)),psg.Push()],
 	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True),psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('1.965', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
 	[BluePSGButton('Monitor Power'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Autocorrelate'), BluePSGButton('Exit')], #push adds flexible whitespace
-	[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
+	#[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
+	]
 	#Create window
 	window = psg.Window('Autocorrelation',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -69,6 +71,9 @@ def GUI():
 		elif event == 'num_points' and len(values['num_points']):
 			enforce_number(window,values,event,decimal_allowed=False)
 			enforce_max_min(window,values,event,16383,0)
+			update_approx_time(window,values)
+		elif event == 'Sampling_rate':
+			update_approx_time(window,values)
 		elif event == 'Piezo_start_loc':
 			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
 		elif event == 'time_scale_factor' and len(values['time_scale_factor']):
@@ -116,6 +121,28 @@ def update_power_monitor(frame,PM_inst,x,y,fig,line,start_time):
 	fig.gca().relim()
 	fig.gca().autoscale_view()
 
+def update_approx_time(window,values):
+	num_points = int(values['num_points'])
+	Lock_in_sampling_rate = values['Sampling_rate']
+	Lock_in_sampling_rate_units = Lock_in_sampling_rate.split(" ")[1]
+	if Lock_in_sampling_rate_units == 'mHz':
+		Lock_in_sampling_rate = round(float(Lock_in_sampling_rate.split(" ")[0])*1e-3,3)
+	elif Lock_in_sampling_rate_units == 'Hz':
+		Lock_in_sampling_rate = int(Lock_in_sampling_rate.split(" ")[0])
+	num_sec_total = round(num_points/Lock_in_sampling_rate)
+	if num_sec_total > 60*60:
+		num_sec = num_sec_total%60
+		num_min_total = int((num_sec_total-num_sec)/60)
+		num_min = num_min_total%60
+		num_hour = int((num_min_total-num_min)/60)
+		window['approx_time'].update(value="Approx time: "+str(num_hour)+"h "+str(num_min)+"m "+str(num_sec)+"s")
+	elif num_sec_total > 60:
+		num_sec = num_sec_total%60
+		num_min = int((num_sec_total-num_sec)/60)
+		window['approx_time'].update(value="Approx time: "+str(num_min)+"m "+str(num_sec)+"s")
+	else:
+		window['approx_time'].update(value="Approx time: "+str(num_sec_total)+"s")
+
 def Autocorrelation(window,values):
 	### Get parameters from GUI
 	device_name = values['Device_name']
@@ -162,7 +189,9 @@ def Autocorrelation(window,values):
 		   return
 	### Name Output Files
 	scan_name = device_name+"_"+str(Lock_in_sampling_rate)+"Hz_"+str(scan_speed)+"Hz_"+str(num_points)+"pts"
-	[csv_location, png_location, scan_name] = get_file_locations(save_data, save_fig, characterization_directory, 'Autocorrelation', scan_name)
+	[csv_location, png_location, scan_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Autocorrelation', scan_name)
+	if scan_name == '-NULL-':
+		return
 	### Connect to Lab Equipment
 	# Lock-in Amplifier
 	Lock_in_inst = connect_to_GPIB(Lock_in_amp)
@@ -183,6 +212,7 @@ def Autocorrelation(window,values):
 	window.Refresh()
 	Piezo_inst.move_relative(start_point)
 	Piezo_inst.wait_for_complete(30000)
+	piezo_start_loc = Piezo_inst.get_position()
 	# Start data collection
 	print(" Performing Autocorrelation...")
 	window.Refresh()
@@ -196,19 +226,17 @@ def Autocorrelation(window,values):
 		buffer_size = Lock_in_inst.read_buffer_size()
 		if buffer_size < num_points:
 			psg.one_line_progress_meter('Autocorrelation Progress', buffer_size, num_points, orientation='horizontal')
-			#loading_bar(buffer_size/num_points)
-			#window.Refresh()
 		else:
 			psg.one_line_progress_meter('Autocorrelation Progress', num_points, num_points, orientation='horizontal')
-			#loading_bar(1)
-			#window.Refresh()
 	# Return stage to initial position
 	Piezo_inst.stop_motion()
-	num_steps_moved = Piezo_inst.get_position()
+	piezo_end_loc = Piezo_inst.get_position()
 	if return_to_start:
 		print(" Returning to (the best guess of) the initial position")
 		window.Refresh()
-		Piezo_inst.move_relative(-1*reverse_correction_factor*(num_steps_moved-start_point)-start_point) #Labview used a correction factor here
+		#print("locs:",piezo_start_loc,piezo_end_loc)
+		#window.Refresh()
+		Piezo_inst.move_relative(-1*reverse_correction_factor*(piezo_end_loc-piezo_start_loc)-piezo_start_loc) #Labview used a correction factor here
 	print(" Reading Data from SR830")
 	window.Refresh()
 	intensity = Lock_in_inst.read_from_buffer(num_points)

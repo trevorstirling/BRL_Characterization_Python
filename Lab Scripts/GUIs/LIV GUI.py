@@ -6,15 +6,15 @@
 # device_source5value_source4value_source3value_source2value.txt        #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 20, 2023                                                   #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import time
-from common_functions import connect_to_PM,connect_to_GPIB,get_file_locations,plot_LIV
-from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button
+from common_functions import connect_to_PM,connect_to_GPIB,plot_LIV
+from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI
 import PySimpleGUI as psg
 
 font = 'Tahoma'
@@ -506,7 +506,9 @@ def LIV(window,values):
 							scan_name += '_'+str(round(Source_input_list_2[i2]*1e3))+'mA'
 						elif Source_2_mode == 'Voltage':
 							scan_name += '_'+str(round(Source_input_list_2[i2]*10)/10)+'V'
-					[csv_location, png_location, scan_name] = get_file_locations(save_data, save_fig, characterization_directory, 'LIV', scan_name)
+					[csv_location, png_location, scan_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'LIV', scan_name)
+					if scan_name == '-NULL-':
+						return
 					### Save data to file
 					if save_data:
 						if two_facet_LIV:
