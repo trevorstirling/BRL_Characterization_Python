@@ -3,13 +3,13 @@
 # GUI added by Eman Shayeb                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 20, 2023                                                   #
+# Date: Sept 21, 2023                                                   #
 #########################################################################
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from common_functions import connect_to_GPIB,plot_spectrum,BluePSGButton
+from common_functions import connect_to_GPIB,plot_spectrum
 from GUI_common_functions import BluePSGButton,enforce_number,get_file_locations_GUI
 import PySimpleGUI as psg
 
@@ -121,7 +121,7 @@ def Spectrum_Analyzer_Capture(window,values):
 		spectrum_analyzer_type = 'OSA'
 	### Name Output Files
 	[csv_location, png_location, device_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Spectrum', device_name)
-	if scan_name == '-NULL-':
+	if device_name == '-NULL-':
 		return
 	### Connect to Lab Equipment
 	# Spectrum Analyzer

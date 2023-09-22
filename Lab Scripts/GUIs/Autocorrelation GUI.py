@@ -6,7 +6,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 20, 2023                                                   #
+# Date: Sept 21, 2023                                                   #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -34,10 +34,9 @@ def GUI():
 	[psg.Text('Piezo:'), psg.Combo(['Newport'], default_value='Newport', size=(8,1), enable_events=True, readonly=True, key='Piezo'), psg.Text('Speed:'), psg.Combo([5,100,666,1700], default_value=100, size=(4,1), readonly=True, key='Piezo_speed'), psg.Text('Hz'),psg.Text('  Channel:'), psg.Combo([1,2,3,4], default_value=1, size=(2,1), readonly=True, key='Piezo_channel'),psg.Text('Axis:'), psg.Combo([1,2], default_value=1, size=(2,1), readonly=True, key='Piezo_axis'),psg.Text("Step Amplitude:", visible=False), psg.InputText('50', key='step_amplitude', size=(3,1), enable_events=True, visible=False), psg.Text('Piezo Port:'), psg.InputText('COM3', key='piezo_port', size=(5,1))],
 	[psg.Text('Move before scan:'), psg.InputText('-1500', key='Piezo_start_loc', size=(8,1), enable_events=True), psg.Text('steps'), psg.Checkbox('Return to start', size=(15,1), key='return_to_start', default=True, enable_events=True),psg.Text("Reverse Correction Factor", key='reverse_factor_text', visible=True), psg.InputText('0.8', key='reverse_correction_factor', size=(5,1), enable_events=True, visible=True)],
 	[psg.Push(),psg.Text('--------------- Plot Options ---------------',font=('Tahoma', 20)),psg.Push()],
-	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True),psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('1.965', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
-	[BluePSGButton('Monitor Power'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Autocorrelate'), BluePSGButton('Exit')], #push adds flexible whitespace
-	#[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
-	]
+	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True),psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('2.041', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
+	[BluePSGButton('Monitor Power'), BluePSGButton('Default 1'), BluePSGButton('Default 2'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Autocorrelate'), BluePSGButton('Exit')], #push adds flexible whitespace
+	[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
 	#Create window
 	window = psg.Window('Autocorrelation',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -67,6 +66,26 @@ def GUI():
 		elif event == 'Monitor Power':
 			Monitor_power(values)
 			plt.style.use('default')
+		elif event == 'Default 1':
+			window['num_points'].update(value='16000')
+			window['Sampling_rate'].update(value='512 Hz')
+			window['Piezo_speed'].update(value=100)
+			window['is_calibrated'].update(value=True)
+			window['calib_factor_text'].update(visible=True)
+			window['time_scale_factor'].update(visible=True)
+			window['time_scale_factor'].update(value='2.041')
+			window['Piezo_start_loc'].update(value='-1500')
+			window['reverse_correction_factor'].update(value='0.8')
+		elif event == 'Default 2':
+			window['num_points'].update(value='16000')
+			window['Sampling_rate'].update(value='256 Hz')
+			window['Piezo_speed'].update(value=666)
+			window['is_calibrated'].update(value=True)
+			window['calib_factor_text'].update(visible=True)
+			window['time_scale_factor'].update(visible=True)
+			window['time_scale_factor'].update(value='0.146')
+			window['Piezo_start_loc'].update(value='-16000')
+			window['reverse_correction_factor'].update(value='0.85')
 		#data validation
 		elif event == 'num_points' and len(values['num_points']):
 			enforce_number(window,values,event,decimal_allowed=False)
@@ -187,6 +206,10 @@ def Autocorrelation(window,values):
 		   pass
 		if response == "No":
 		   return
+	### Prepare loading bar window
+	loading_layout = [[psg.Text('Autocorrelation Progress: 0%',key='progress_text')],
+	[psg.ProgressBar(num_points, orientation='h', size=(20, 20), expand_x=True, key='progress_bar')],
+    [psg.Push(), psg.Cancel()]]
 	### Name Output Files
 	scan_name = device_name+"_"+str(Lock_in_sampling_rate)+"Hz_"+str(scan_speed)+"Hz_"+str(num_points)+"pts"
 	[csv_location, png_location, scan_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Autocorrelation', scan_name)
@@ -219,15 +242,20 @@ def Autocorrelation(window,values):
 	Piezo_inst.start_jog(scan_speed)
 	Lock_in_inst.start_buffer_collection()
 	buffer_size = 0
-	#loading_bar(0)
-	#window.Refresh()
+	loading_window = psg.Window("Autocorrelation Progress", loading_layout)
+	loading_window.finalize()
 	while buffer_size < num_points:
 		time.sleep(0.1)
 		buffer_size = Lock_in_inst.read_buffer_size()
 		if buffer_size < num_points:
-			psg.one_line_progress_meter('Autocorrelation Progress', buffer_size, num_points, orientation='horizontal')
+			#psg.one_line_progress_meter('Autocorrelation Progress', buffer_size, num_points, orientation='horizontal')
+			loading_window['progress_bar'].UpdateBar(buffer_size)
+			loading_window['progress_text'].update(value='Autocorrelation Progress: '+str(round(buffer_size/num_points*100,1))+'%')
 		else:
-			psg.one_line_progress_meter('Autocorrelation Progress', num_points, num_points, orientation='horizontal')
+			#psg.one_line_progress_meter('Autocorrelation Progress', num_points, num_points, orientation='horizontal')
+			loading_window['progress_bar'].UpdateBar(num_points)
+			loading_window['progress_text'].update(value='Autocorrelation Progress: 100%')
+	loading_window.close()
 	# Return stage to initial position
 	Piezo_inst.stop_motion()
 	piezo_end_loc = Piezo_inst.get_position()
