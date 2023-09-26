@@ -19,7 +19,7 @@
 # -set_sensitivity()                                                    #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 26, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -31,6 +31,8 @@ class AQ6374:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #[ms] set long timeout to allow sweeping
+		self.isESA = False
+		self.isOSA = True
 		#set command format to AQ6374 format:
 		self.GPIB.write('CFORM1') #If in AQ6317 format, change to AQ6374 format
         

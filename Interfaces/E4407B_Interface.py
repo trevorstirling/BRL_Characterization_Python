@@ -19,7 +19,7 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 26, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -31,6 +31,8 @@ class E4407B:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 25000
+		self.isESA = True
+		self.isOSA = False
 
 	def initialize(self): # new addition 
 		#Restore Defaults

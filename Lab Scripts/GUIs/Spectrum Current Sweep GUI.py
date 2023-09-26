@@ -308,10 +308,6 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	pulse_delay_5 = int(values['pulsed_delay_5'])*1e-6
 	### Initialize other parameters
 	characterization_directory = os.path.join('..','Data')
-	if spectrum_analyzer == 'E4407B':
-		spectrum_analyzer_type = 'ESA'
-	else:
-		spectrum_analyzer_type = 'OSA'
 	### Connect to Lab Equipment
 	Source_1_mode = Source_1_mode.capitalize()
 	Source_2_mode = Source_2_mode.capitalize()
@@ -474,7 +470,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 							full_data = np.zeros((len(power), 2))
 							full_data[:,0] = x_data
 							full_data[:,1] = power
-							if spectrum_analyzer_type == 'ESA':
+							if spectrum_analyzer_inst.isESA:
 								np.savetxt(csv_location, full_data , delimiter=',', header='Frequency [GHz], Power [dBm]', comments='')
 							else:
 								np.savetxt(csv_location, full_data , delimiter=',', header='Wavelength [nm], Power [dBm]', comments='')
@@ -482,7 +478,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 							window.refresh()
 						#Plot data
 						if display_fig or save_fig:
-							if spectrum_analyzer_type == 'ESA':
+							if spectrum_analyzer_inst.isESA:
 								fig = plot_spectrum(scan_name, x_data, power,x_is_freq=True, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
 							else:
 								fig = plot_spectrum(scan_name, x_data, power, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]

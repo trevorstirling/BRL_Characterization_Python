@@ -19,7 +19,7 @@
 # -set_sensitivity()                                                    #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 26, 2023                                                   #
 #########################################################################
 
 import numpy as np
@@ -31,6 +31,8 @@ class AQ6317B:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #[ms] set long timeout to allow sweeping
+		self.isESA = False
+		self.isOSA = True
         
 	def initialize(self):
 		#Restore Defaults

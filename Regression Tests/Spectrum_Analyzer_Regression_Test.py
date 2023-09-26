@@ -2,7 +2,7 @@
 # Script to test spectrum analyzer code works properly                  #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2023                                                   #
+# Date: Sept 26, 2023                                                   #
 #########################################################################
 
 import sys
@@ -10,17 +10,15 @@ import time
 import numpy as np
 from common_functions import colour,connect_to_GPIB
 
-def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
-	if type != 'OSA' and type != 'ESA':
-		raise Exception(colour.red+" Reference Level Test: FAILED"+colour.end)
+def Spectrum_Analyzer_Regression_Test(spectrum_analyzer):
 	### Connect to Spectrum Analyzer
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
 	#spectrum_analyzer_inst.initialize()
 	test_count = 0
 	pass_count = 0
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		test_channel = 'A'
-	elif type == 'ESA':
+	else:
 		test_channel = '1'
 	##########################################
 	####           Start Tests            ####
@@ -41,10 +39,10 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 		print(colour.red+" Reference Level Test: FAILED"+colour.end)
 	#Span Test
 	test_count += 1
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		value_1_set = 20
 		value_2_set = 6
-	elif type == 'ESA':
+	else:
 		value_1_set = 1e9
 		value_2_set = 10e9
 	spectrum_analyzer_inst.set_span(value_1_set)
@@ -57,7 +55,7 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 	else:
 		print(colour.red+" Span Test results "+str(value_1)+", "+str(value_2)+colour.end)
 		print(colour.red+" Span Test: FAILED"+colour.end)
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		#Wavelength Test
 		test_count += 1
 		value_1_set = 1672
@@ -72,7 +70,7 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 		else:
 			print(colour.red+" Wavelength Test results "+str(value_1)+", "+str(value_2)+colour.end)
 			print(colour.red+" Wavelength Test: FAILED"+colour.end)
-	elif type == 'ESA':
+	else:
 		#Frequency Test
 		test_count += 1
 		value_1_set = 10e9
@@ -103,10 +101,10 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 		print(colour.red+" Y Scale Test: FAILED"+colour.end)
 	#Resolution Bandwidth Test
 	test_count += 1
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		value_1_set = 1.0
 		value_2_set = 0.1
-	elif type == 'ESA':
+	else:
 		value_1_set = 3e6
 		value_2_set = 100e3
 	spectrum_analyzer_inst.set_rbw(value_1_set)
@@ -136,10 +134,10 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 			print(colour.red+" Sensitivity Test: FAILED"+colour.end)
 	else:
 		#VBW Test
-		if type == 'OSA':
+		if spectrum_analyzer_inst.isOSA:
 			value_1_set = 10
 			value_2_set = 2000
-		elif type == 'ESA':
+		else:
 			value_1_set = 1000
 			value_2_set = 3e6
 		spectrum_analyzer_inst.set_vbw(value_1_set)
@@ -173,14 +171,14 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 	#Capture Test
 	test_count += 1
 	[x_data, power] = spectrum_analyzer_inst.capture(test_channel)
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		if max(x_data) >= 600 and max(x_data) <= 1750 and max(power) <= 20 and max(power) >= -210:
 			print(colour.green+" Capture Test: PASSED"+colour.end)
 			pass_count += 1
 		else:
 			print(colour.red+" Capture Test results "+str(max(x_data))+", "+str(max(power))+colour.end)
 			print(colour.red+" Capture Test: FAILED"+colour.end)
-	elif type == 'ESA':
+	else:
 		if max(x_data) >= 9e-6 and max(x_data) <= 26.5 and max(power) <=55 and max(power) >= -150:
 			print(colour.green+" Capture Test: PASSED"+colour.end)
 			pass_count += 1
@@ -189,13 +187,13 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 			print(colour.red+" Capture Test: FAILED"+colour.end)
 	#Peak To Center Test
 	test_count += 1
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		spectrum_analyzer_inst.set_rbw(0.1)
 		actual_peak = x_data[np.argmax(power)] #relies on capture test run previously
-	elif type == 'ESA':
+	else:
 		spectrum_analyzer_inst.set_rbw(100e3)
 		actual_peak = x_data[np.argmax(power)]*1e9 #relies on capture test run previously
-	if type == 'OSA':
+	if spectrum_analyzer_inst.isOSA:
 		spectrum_analyzer_inst.set_wavelength(actual_peak+1)
 		value_1 = spectrum_analyzer_inst.read_value('Wavelength')
 		spectrum_analyzer_inst.peak_to_center()
@@ -206,7 +204,7 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 		else:
 			print(colour.red+" Peak To Center Test results "+str(value_1)+", "+str(value_2)+colour.end)
 			print(colour.red+" Peak To Center Test: FAILED"+colour.end)
-	if type == 'ESA':
+	else:
 		spectrum_analyzer_inst.set_frequency(actual_peak+0.1e9)
 		value_1 = spectrum_analyzer_inst.read_value('Frequency')
 		spectrum_analyzer_inst.peak_to_center()
@@ -227,7 +225,7 @@ def Spectrum_Analyzer_Regression_Test(spectrum_analyzer,type):
 	
 if __name__ == "__main__":
 	if len(sys.argv)-1 == 2:
-		#Two inputs (spectrum_analyzer,type)
-		Spectrum_Analyzer_Regression_Test(sys.argv[1],sys.argv[2])
+		#Two inputs (spectrum_analyzer)
+		Spectrum_Analyzer_Regression_Test(sys.argv[1])
 	else:
-		raise Exception(colour.red+colour.alert+" Spectrum_Analyzer_Regression_Test needs two arguments (device name and OSA/ESA)"+colour.end)
+		raise Exception(colour.red+colour.alert+" Spectrum_Analyzer_Regression_Test needs one arguments (device name)"+colour.end)

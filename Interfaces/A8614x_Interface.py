@@ -19,7 +19,7 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 14, 2022                                                   #
+# Date: Sept 26, 2022                                                   #
 #########################################################################
 
 ### Need to test is_sweeping(), wait_for_sweeping(), and sweep()
@@ -31,6 +31,8 @@ class A8614x:
 	def __init__(self, rm, address):
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #set long timeout to allow sweeping
+		self.isESA = False
+		self.isOSA = True
 
 	def initialize(self):
 		#Restore Defaults

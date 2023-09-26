@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 17, 2023                                                   #
+# Date: Sept 26, 2023                                                   #
 #########################################################################
 
 import pyvisa
@@ -297,12 +297,14 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 def find_FW(x,y,width_y):
 	y = [i for i in y] #convert to list in case of numpy array
 	y_max_index = y.index(max(y))
+	i = len(y)-1
 	for i in range(y_max_index,len(y)):
 		if y[i]<=width_y:
 			FW_end = x[i-1]
 			break
 	if i == len(y)-1:
 		FW_end = x[-1]
+	i = 0
 	for i in range(y_max_index-1,-1,-1):
 		if y[i]<=width_y:
 			FW_start = x[i+1]

@@ -23,7 +23,7 @@ def GUI():
 	default_SA = 'AQ6374'
 	more_SA_options_open = False
 	#Define layout
-	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(5,1), enable_events=True), BluePSGButton('Set λ [nm]'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]'), BluePSGButton('Repeat')]]
+	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(5,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
 	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
 	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False)],
@@ -35,14 +35,15 @@ def GUI():
 	window = psg.Window('Spectrum Analyzer Capture',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
 	update_channels(window, default_SA)
+	update_labels(window, default_SA)
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
-		elif event == 'Set λ [nm]':
-			set_wavelength(values)
-		elif event == 'Set span [nm]':
+		elif event == 'set_center':
+			set_center(values)
+		elif event == 'set_span':
 			set_span(values)
 		elif event == 'Peak to Center':
 			peak_to_center(values)
@@ -50,6 +51,7 @@ def GUI():
 			sweep_continuously(values)
 		elif event == 'Spectrum_analyzer':
 			update_channels(window, values['Spectrum_analyzer'])
+			update_labels(window, values['Spectrum_analyzer'])
 		elif event == 'Capture':
 			Spectrum_Analyzer_Capture(window,values)
 		elif event == 'Sweep':
@@ -79,9 +81,24 @@ def update_channels(window, spectrum_analyzer):
 	if spectrum_analyzer == 'E4407B': 
 		window['Channel'].update(values = ['1', '2', '3'], value = '1')
 
-def set_wavelength(values):
+def update_labels(window, spectrum_analyzer):
+	if spectrum_analyzer == 'E4407B':
+		window['wavelength'].update(value = '1.5')
+		window['span'].update(value = '3')
+		window['set_center'].update(text = 'Set f [GHz]')
+		window['set_span'].update(text = 'Set span [GHz]')
+	else:
+		window['wavelength'].update(value = '780')
+		window['span'].update(value = '20')
+		window['set_center'].update(text = 'Set λ [nm]')
+		window['set_span'].update(text = 'Set span [nm]')
+
+def set_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
-	spectrum_analyzer_inst.set_wavelength(values['wavelength'])
+	if spectrum_analyzer_inst.isOSA:
+		spectrum_analyzer_inst.set_wavelength(values['wavelength'])
+	else:
+		spectrum_analyzer_inst.set_frequency(float(values['wavelength'])*1e9) #convert GHz to Hz
 
 def peak_to_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -89,7 +106,10 @@ def peak_to_center(values):
 
 def set_span(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
-	spectrum_analyzer_inst.set_span(values['span'])
+	if spectrum_analyzer_inst.isOSA:
+		spectrum_analyzer_inst.set_span(values['span'])
+	else:
+		spectrum_analyzer_inst.set_span(float(values['span'])*1e9) #convert GHz to Hz
 
 def sweep_SA(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -115,10 +135,6 @@ def Spectrum_Analyzer_Capture(window,values):
 	save_data = save_fig
 	### Initialize other parameters
 	characterization_directory = os.path.join('..','Data')
-	if spectrum_analyzer == 'E4407B':
-		spectrum_analyzer_type = 'ESA'
-	else:
-		spectrum_analyzer_type = 'OSA'
 	### Name Output Files
 	[csv_location, png_location, device_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Spectrum', device_name)
 	if device_name == '-NULL-':
@@ -140,7 +156,7 @@ def Spectrum_Analyzer_Capture(window,values):
 		full_data = np.zeros((len(power), 2))
 		full_data[:,0] = x_data
 		full_data[:,1] = power
-		if spectrum_analyzer_type == 'ESA':
+		if spectrum_analyzer_inst.isESA:
 			np.savetxt(csv_location, full_data , delimiter=',', header='Frequency [GHz], Power [dBm]', comments='')
 		else:
 			np.savetxt(csv_location, full_data , delimiter=',', header='Wavelength [nm], Power [dBm]', comments='')
@@ -148,7 +164,7 @@ def Spectrum_Analyzer_Capture(window,values):
 		window.refresh()
 	#Plot data
 	if display_fig or save_fig:
-		if spectrum_analyzer_type == 'ESA':
+		if spectrum_analyzer_inst.isESA:
 			fig = plot_spectrum(device_name, x_data, power, x_is_freq=True, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
 		else:
 			fig = plot_spectrum(device_name, x_data, power, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
