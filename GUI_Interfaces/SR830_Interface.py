@@ -12,12 +12,12 @@
 # -set_sampling_rate()													#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Feb 17, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import time
 import struct
-from common_functions import colour
+import PySimpleGUI as psg
 
 class SR830:
 	def __init__(self, rm, address):
@@ -33,12 +33,12 @@ class SR830:
 			range_num = time_constants.index(value)
 		else:
 			if value < time_constants[0]:
-				raise Exception(colour.red+colour.alert+" The time constant can not be set as low as "+str(value)+" s"+colour.end)
+				psg.popup("The time constant can not be set as low as "+str(value)+" s")
 			elif value > time_constants[-1]:
-				raise Exception(colour.red+colour.alert+" The time constant can not be set as high as "+str(value)+" s"+colour.end)
+				psg.popup("The time constant can not be set as high as "+str(value)+" s")
 			else:
 				range_num = sum([value>i for i in time_constants])
-				print(colour.yellow+" Time constant "+str(value)+" s is not valid, set to "+str(time_constants[range_num])+" s instead"+colour.end)
+				print(" Time constant "+str(value)+" s is not valid, set to "+str(time_constants[range_num])+" s instead")
 		self.GPIB.write('OFLT'+str(range_num))
 
 	def set_sensitivity(self, value):
@@ -47,12 +47,12 @@ class SR830:
 			range_num = sensitivities.index(value)
 		else:
 			if value < sensitivities[0]:
-				raise Exception(colour.red+colour.alert+" The sensitivity can not be set as low as "+str(value)+" V"+colour.end)
+				psg.popup("The sensitivity can not be set as low as "+str(value)+" V")
 			elif value > sensitivities[-1]:
-				raise Exception(colour.red+colour.alert+" The sensitivity can not be set as high as "+str(value)+" V"+colour.end)
+				psg.popup("The sensitivity can not be set as high as "+str(value)+" V")
 			else:
 				range_num = sum([value>i for i in sensitivities])
-				print(colour.yellow+" Sensitivity "+str(value)+" V is not valid, set to "+str(sensitivities[range_num])+" V instead"+colour.end)
+				print(" Sensitivity "+str(value)+" V is not valid, set to "+str(sensitivities[range_num])+" V instead")
 		self.GPIB.write('SENS'+str(range_num))
 	
 	def read_value(self,type="All"):
@@ -66,7 +66,7 @@ class SR830:
 		elif type == "All":
 			return [r,theta,freq]
 		else:
-			raise Exception(colour.red+colour.alert+" Can not read "+str(type)+", type not recognized"+colour.end)
+			psg.popup("Can not read "+str(type)+", type not recognized")
 	
 	def read_power(self):
 		return self.read_value("Power")
@@ -97,10 +97,10 @@ class SR830:
 			range_num = rates.index(value)
 		else:
 			if value < rates[0]:
-				raise Exception(colour.red+colour.alert+" The sampling rate can not be set as low as "+str(value)+" Hz"+colour.end)
+				psg.popup("The sampling rate can not be set as low as "+str(value)+" Hz")
 			elif value > rates[-1]:
-				raise Exception(colour.red+colour.alert+" The sampling rate can not be set as high as "+str(value)+" Hz"+colour.end)
+				psg.popup("The sampling rate can not be set as high as "+str(value)+" Hz")
 			else:
 				range_num = sum([value>i for i in sensitivities])
-				print(colour.yellow+" Sampling rate "+str(value)+" Hz is not valid, set to "+str(rates[range_num])+" Hz instead"+colour.end)
+				print(" Sampling rate "+str(value)+" Hz is not valid, set to "+str(rates[range_num])+" Hz instead")
 		self.GPIB.write('SRAT'+str(range_num))

@@ -19,13 +19,13 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 26, 2023                                                   #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import numpy as np
 import math
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 
 class E4407B:
 	def __init__(self, rm, address):
@@ -134,4 +134,4 @@ class E4407B:
 		elif type == 'VBW':
 			return float(self.GPIB.query_ascii_values(':SENS:BWID:VID?')[0])
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")

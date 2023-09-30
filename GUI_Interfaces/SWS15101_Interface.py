@@ -13,10 +13,10 @@
 #       Don't query, use a write, wait, read instead					#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Nov 11, 2022													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
-from common_functions import colour
+import PySimpleGUI as psg
 
 class SWS15101:
 	def __init__(self, rm, address):
@@ -28,7 +28,7 @@ class SWS15101:
 		while self.GPIB.stb&1 != 1:
 			wait_count = wait_count + 1
 			if wait_count == self.max_wait_cycles-1:
-				raise Exception(colour.red+colour.alert+" Operation not complete after "+str(self.max_wait_cycles)+" wait cycles."+colour.end)
+				psg.popup("Operation not complete after "+str(self.max_wait_cycles)+" wait cycles.")
 
 	def set_power(self, value):
 		#assumes value is in [mW]
@@ -50,7 +50,7 @@ class SWS15101:
 			#something is in the read register, remove it
 			self.GPIB.read()
 			if read_count == 99:
-				raise Exception(colour.red+colour.alert+" Read register not empty after 100 reads."+colour.end)
+				psg.popup("Read register not empty after 100 reads.")
 		if type == 'Power':
 			self.GPIB.write('P?')
 			self.wait_for_OPC()
@@ -60,7 +60,7 @@ class SWS15101:
 			elif result[:2] == 'P=':
 				return float(result.strip('P='))
 			else:
-				raise Exception(colour.red+colour.alert+" Received incorrect result:"+result+". Please try again."+colour.end)
+				psg.popup("Received incorrect result:"+result+". Please try again.")
 		if type == 'Current':
 			self.GPIB.write('I?')
 			self.wait_for_OPC()
@@ -70,7 +70,7 @@ class SWS15101:
 			elif result[:2] == 'I=':
 				return float(result.strip('I='))
 			else:
-				raise Exception(colour.red+colour.alert+" Received incorrect result:"+result+". Please try again."+colour.end)
+				psg.popup("Received incorrect result:"+result+". Please try again.")
 		elif type == 'Wavelength':
 			self.GPIB.write('L?')
 			self.wait_for_OPC()
@@ -78,9 +78,9 @@ class SWS15101:
 			if result[:2] == 'L=':
 				return float(result.strip('L='))
 			else:
-				raise Exception(colour.red+colour.alert+" Received incorrect result:"+result+". Please try again."+colour.end)
+				psg.popup("Received incorrect result:"+result+". Please try again.")
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")
 		return result
 
 	def set_output(self, state):
@@ -91,4 +91,4 @@ class SWS15101:
 			self.GPIB.write('DISABLE')
 			self.wait_for_OPC()
 		else:
-			raise Exception(colour.red+colour.alert+" Channel state must be ON or OFF"+colour.end)
+			psg.popup("Channel state must be ON or OFF")

@@ -19,13 +19,13 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 26, 2022                                                   #
+# Date: Sept 29, 2022                                                   #
 #########################################################################
 
 ### Need to test is_sweeping(), wait_for_sweeping(), and sweep()
 
+import PySimpleGUI as psg
 import numpy as np
-from common_functions import colour
 
 class A8614x:
 	def __init__(self, rm, address):
@@ -52,7 +52,7 @@ class A8614x:
 	
 	def capture(self, channel, print_status=True):
 		if channel not in ['A','B','C','D','E','F']:
-			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-F"+colour.end)
+			psg.popup(str(channel)+" is not a valid channel, should be A-F")
 		if print_status:
 			print(" Capturing...")
 		start_output = self.GPIB.query_ascii_values('TRACE:DATA:X:STAR? TR'+channel)
@@ -91,7 +91,7 @@ class A8614x:
 					self.GPIB.write('TRAC:FEED:CONT TR'+chan+', NEV')
 			self.GPIB.write('TRAC:FEED:CONT TR'+channel+', ALW')
 		elif channel != 'N/A':
-			raise Exception(colour.red+colour.alert+" "+str(channel)+" is not a valid channel, should be A-F (or left empty)"+colour.end)
+			psg.popup(str(channel)+" is not a valid channel, should be A-F (or left empty)")
 		if print_status:
 			print(" Sweeping...")
 		self.GPIB.write('INIT:IMM')
@@ -132,7 +132,7 @@ class A8614x:
 		elif status == 0:
 			self.GPIB.write('INIT:CONT OFF')
 		else:
-			raise Exception(colour.red+colour.alert+" sweep_continuous status must be 1 or 0"+colour.end)
+			psg.popup("sweep_continuous status must be 1 or 0")
 
 	def read_value(self, type):
 		if type == 'Reference Level':
@@ -148,4 +148,4 @@ class A8614x:
 		elif type == 'VBW':
 			return float(self.GPIB.query_ascii_values('SENS:BWID:VID?')[0])
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")

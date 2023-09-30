@@ -1,36 +1,39 @@
 #########################################################################
 # Script to capture spectrum using various spectrum analyzers           #
-# GUI added by Eman Shayeb                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 21, 2023                                                   #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from common_functions import connect_to_GPIB,plot_spectrum
-from GUI_common_functions import BluePSGButton,enforce_number,get_file_locations_GUI
+from GUI_common_functions import BluePSGButton,enforce_number,get_file_locations_GUI,connect_to_GPIB,plot_spectrum
 import PySimpleGUI as psg
 
 symbol_open = '▾'
 symbol_closed = '▸'
 
-def GUI():
+def GUI(debug=False):
 	#Options
 	psg.set_options(font=('Tahoma', 16))
 	psg.theme('DarkBlue14')
 	default_SA = 'AQ6374'
 	more_SA_options_open = False
 	#Define layout
+	if debug:
+		print_window = []
+	else:
+		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
 	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(5,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
-	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
+	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
+	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
 	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False)],
 	[BluePSGButton('Sweep'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture'), BluePSGButton('Exit')], #push adds flexible whitespace
 	[psg.Text(symbol_closed, enable_events=True, key='more_SA_options'),psg.Text('More SA Functions')],
 	[psg.pin(psg.Column(SA_options,key='SA_options',visible=more_SA_options_open))],
-	[psg.Output(size=(10,5), expand_x=True, expand_y=True)]]
+	print_window]
 	#Create window
 	window = psg.Window('Spectrum Analyzer Capture',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -95,6 +98,8 @@ def update_labels(window, spectrum_analyzer):
 
 def set_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
+	if not spectrum_analyzer_inst:
+		return
 	if spectrum_analyzer_inst.isOSA:
 		spectrum_analyzer_inst.set_wavelength(values['wavelength'])
 	else:
@@ -102,10 +107,14 @@ def set_center(values):
 
 def peak_to_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
+	if not spectrum_analyzer_inst:
+		return
 	spectrum_analyzer_inst.peak_to_center()
 
 def set_span(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
+	if not spectrum_analyzer_inst:
+		return
 	if spectrum_analyzer_inst.isOSA:
 		spectrum_analyzer_inst.set_span(values['span'])
 	else:
@@ -113,6 +122,8 @@ def set_span(values):
 
 def sweep_SA(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
+	if not spectrum_analyzer_inst:
+		return
 	print(" Sweeping...")
 	window.refresh()
 	spectrum_analyzer_inst.sweep(values['Channel'], print_status=False)
@@ -121,10 +132,13 @@ def sweep_SA(window, values):
 
 def sweep_continuously(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
+	if not spectrum_analyzer_inst:
+		return
 	spectrum_analyzer_inst.sweep_continuous(1)
 
 def Spectrum_Analyzer_Capture(window,values):
 	### Get parameters from GUI
+	user_name = values['User_name']
 	device_name = values['Device_name']
 	spectrum_analyzer = values['Spectrum_analyzer']
 	spectrum_analyzer_channel = values['Channel']
@@ -134,7 +148,7 @@ def Spectrum_Analyzer_Capture(window,values):
 	save_fig = values['Save_fig']
 	save_data = save_fig
 	### Initialize other parameters
-	characterization_directory = os.path.join('..','Data')
+	characterization_directory = os.path.join('..','Data',user_name)
 	### Name Output Files
 	[csv_location, png_location, device_name] = get_file_locations_GUI(save_data, save_fig, characterization_directory, 'Spectrum', device_name)
 	if device_name == '-NULL-':
@@ -142,6 +156,8 @@ def Spectrum_Analyzer_Capture(window,values):
 	### Connect to Lab Equipment
 	# Spectrum Analyzer
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
+	if not spectrum_analyzer_inst:
+		return
 	### Collect data
 	if spectrum_analyzer_inst.is_sweeping():
 		psg.popup("Spectrum Analyzer is currently sweeping. Stop before capturing.")
@@ -182,4 +198,7 @@ def Spectrum_Analyzer_Capture(window,values):
 	window.refresh()
 
 if __name__ == "__main__":
-   GUI()
+	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+		GUI(1)
+	else:
+		GUI()

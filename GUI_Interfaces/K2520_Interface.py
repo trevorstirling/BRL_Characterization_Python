@@ -23,11 +23,11 @@
 # -enable_init_continuous()												#
 #																		#
 # Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 
 class K2520:
 	def __init__(self, rm, address, channel_input, mode):
@@ -36,7 +36,7 @@ class K2520:
 		self.mode = mode.capitalize()
 		self.responsivity = 1/1.74 #measured photodiode responsivity [A/W]
 		if self.mode != 'Current':
-			raise Exception(colour.red+colour.alert+" The K2520 mode must be Current"+colour.end)
+			psg.popup("The K2520 mode must be Current")
 		self.safe_turn_off()
 		self.GPIB.write('*RST')
 		#Set Mode
@@ -141,7 +141,7 @@ class K2520:
 		elif type == 'Resistance':
 			return float(voltage/drive_current)
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: Invalid Data Name"+colour.end)
+			psg.popup("Read Error: Invalid Data Name")
 	
 	def read_power(self):
 		pd_curr = self.read_value('PD_current')
@@ -156,7 +156,7 @@ class K2520:
 		elif state == 'OFF':
 			self.GPIB.write(':OUTP1 OFF')
 		else:
-			raise Exception(colour.red+colour.alert+" Channel state must be ON or OFF"+colour.end)
+			psg.popup("Channel state must be ON or OFF")
 		
 	def set_display(self, state):
 		if state == 'ON':
@@ -164,7 +164,7 @@ class K2520:
 		elif state == 'OFF':
 			self.GPIB.write(':DISP:ENAB OFF')
 		else:
-			raise Exception(colour.red+colour.alert+" Display enable state must be ON or OFF"+colour.end)
+			psg.popup("Display enable state must be ON or OFF")
 
 	def set_mode(self):
 		pass
@@ -180,7 +180,7 @@ class K2520:
 		self.GPIB.write(':SOUR1:SWE:DIR UP')
 		extra_point = False
 		if start-step < 0:
-			print(colour.yellow+" Warning: could not collect an extra data point, there may be a voltage spike at the start"+colour.end)
+			print(" Warning: could not collect an extra data point, there may be a voltage spike at the start")
 			start = start-step
 			extra_point = True
 		self.GPIB.write(':SOUR1:CURR '+str(start)) #set current here to display current on K2520 during sweep

@@ -18,11 +18,11 @@
 # -set_mode()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: April 19, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 
 class K2604B:
 	def __init__(self, rm, address, channel_input, mode):
@@ -30,14 +30,14 @@ class K2604B:
 		self.GPIB.timeout = 3000 #[ms]
 		self.mode = mode.capitalize()
 		if self.mode != 'Current' and self.mode != 'Voltage':
-			raise Exception(colour.red+colour.alert+" The K2604B mode must be Current or Voltage"+colour.end)
+			psg.popup("The K2604B mode must be Current or Voltage")
 		#Set Channel
 		if str(channel_input) == '1' or channel_input == 'A':
 			self.channel = 'smua'
 		elif str(channel_input) == '2' or channel_input == 'B':
 			self.channel = 'smub'
 		else:
-			raise Exception(colour.red+colour.alert+" The K2604B channel must be A or B"+colour.end)
+			psg.popup("The K2604B channel must be A or B")
 		self.safe_turn_off()
 		#Set Mode
 		self.set_mode()
@@ -110,7 +110,7 @@ class K2604B:
 		
 	def set_waveform(self, waveform, delay=20e-6, width=1e-6):
 		if waveform == 'PULSED':
-			raise Exception(colour.red+colour.alert+" K2604B can not operate in pulsed mode"+colour.end)
+			psg.popup("K2604B can not operate in pulsed mode")
 	
 	def set_trigger_count(self, value):
 		#set value to zero for infinite trigger count
@@ -130,7 +130,7 @@ class K2604B:
 		elif type == 'Resistance':
 			return float(self.GPIB.query('printnumber('+self.channel+'.measure.r())'))
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")
 	
 	def read_setting(self):
 		if self.get_mode() == 'Voltage':
@@ -145,7 +145,7 @@ class K2604B:
 		elif state == 'OFF':
 			self.GPIB.write(self.channel + '.source.output = 0')
 		else:
-			raise Exception(colour.red+colour.alert+" Channel state must be ON or OFF"+colour.end)
+			psg.popup("Channel state must be ON or OFF")
 	
 	def set_mode(self):
 		if self.mode == 'Current':

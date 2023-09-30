@@ -13,13 +13,13 @@
 # -read_range()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: July 6, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import os
 import sys
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 from ctypes import *
 
 class Newport_PM:
@@ -66,16 +66,16 @@ class Newport_PM:
 		elif str(channel) == '1' or str(channel) == '2':
 			self.write('PM:CHAN '+str(channel))
 		else:
-			raise Exception(colour.red+colour.alert+" Channel "+str(channel)+" is not a valid choice"+colour.end)
+			psg.popup("Channel "+str(channel)+" is not a valid choice")
 	
 	def read_power(self):
 		power = self.query('PM:P?')
 		if power == '':
-			raise Exception(colour.red+colour.alert+" Newport Power Meter is not responding - restart power meter and try again"+colour.end)
+			psg.popup("Newport Power Meter is not responding - restart power meter and try again")
 		power = float(power)
 		if power<-3e+38:
 			#detector saturated
-			input(colour.yellow+colour.alert+" The detector is saturated, please unsatuturate it and press enter to continue..."+colour.alert+colour.end)
+			psg.popup("The detector is saturated, please unsatuturate it and click OK to continue...")
 			power = self.read_power()
 		count = 0
 		while power>3e+38:
@@ -83,7 +83,7 @@ class Newport_PM:
 			if count<100:
 				power = float(self.query('PM:P?'))
 			else:
-				raise Exception(colour.red+colour.alert+" Could not obtain valid reading from power meter. Check the power meter is connected to the correct channel"+colour.end)
+				psg.popup("Could not obtain valid reading from power meter. Check the power meter is connected to the correct channel")
 			count += 1
 		return power
 		
@@ -107,7 +107,7 @@ class Newport_PM:
 		if filter_type == 0 or filter_type == 1 or filter_type == 2 or filter_type == 3:
 			self.write('PM:FILT '+str(filter_type))
 		else:
-			raise Exception(colour.red+colour.alert+" Filter type must be 0, 1, 2, or 3"+colour.end)
+			psg.popup("Filter type must be 0, 1, 2, or 3")
 
 	def set_analogfilter(self, type):
 		"""
@@ -120,13 +120,13 @@ class Newport_PM:
 		if type == 0 or type == 1 or type == 2 or type == 3 or type == 4:
 			self.write('PM:ANALOGFILTER ' + str(type))
 		else:
-			raise Exception(colour.red+colour.alert+" Analog filter type must be 0, 1, 2, 3, or 4"+colour.end)
+			rpsg.popup("Analog filter type must be 0, 1, 2, 3, or 4")
 
 	def set_digitalfilter(self, value):
 		if 0 <= value and value <= 10000:
 			self.write('PM:DIGITALFILTER ' + str(value))
 		else:
-			raise Exception(colour.red+colour.alert+" Digital filter must be between 0 and 10000"+colour.end)
+			psg.popup("Digital filter must be between 0 and 10000")
 
 	def set_range(self, range):
 		"""
@@ -139,13 +139,13 @@ class Newport_PM:
 		if range == 0 or range == 1 or range == 2 or range == 3 or range == 4:
 			self.write('PM:RAN ' + str(range))
 		else:
-			raise Exception(colour.red+colour.alert+" Range must be 0, 1, 2, 3, or 4"+colour.end)
+			psg.popup("Range must be 0, 1, 2, 3, or 4")
 
 	def set_autorange(self, status=1):
 		if status == 0 or status == 1:
 			self.write('PM:AUTO '+str(status))
 		else:
-			raise Exception(colour.red+colour.alert+" Autorange status must be 0 or 1"+colour.end)
+			psg.popup("Autorange status must be 0 or 1")
 	
 	def read_range(self):
 		return int(self.query('PM:RAN?'))

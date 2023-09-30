@@ -1,23 +1,21 @@
 #########################################################################
 # Script to take spectrum at different current values using	various lab #
 # equipment                                                             #
-# GUI added by Eman Shayeb                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 20, 2023                                                   #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import time
-from common_functions import connect_to_PM,connect_to_GPIB,plot_spectrum
-from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI
+from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI,connect_to_GPIB,plot_spectrum
 import PySimpleGUI as psg
 
 font = 'Tahoma'
 
-def GUI():
+def GUI(debug=False):
 	#Options
 	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
@@ -25,7 +23,12 @@ def GUI():
 	default_source = 'B2902A'
 	num_sources = 1
 	#Define layout
-	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
+	if debug:
+		print_window = []
+	else:
+		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
+	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Button('', image_data=minus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='remove_source'), psg.Text('Add or Remove Sources'), psg.Button('', image_data=plus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='add_source')],
 	[psg.Push(),psg.Text('--------------- Spectrum Analyzer Options ---------------',font=(font, 20)),psg.Push()],
 	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
@@ -41,7 +44,7 @@ def GUI():
 	[psg.Push(),psg.pin(psg.Column(current_source_title(5),key='source_5_title',visible=False)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(5),key='source_5_options',visible=False))],
 	[BluePSGButton('Ω Check'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture Sweep'), BluePSGButton('Exit')], #push adds flexible whitespace
-	[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
+	print_window]
 	#Create window
 	window = psg.Window('Spectrum Current Sweep',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -112,6 +115,7 @@ def GUI():
 				window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
 				window['protection_'+num].update(value='100')
 				window['units_'+num].update(value='[V]')
+		#data validation
 		elif event == 'Capture Sweep':
 			Spectrum_Analyzer_Capture_Source_Sweep(window,values)
 		elif event == 'Ω Check':
@@ -182,6 +186,8 @@ def update_channel(window,source,num):
 def resistance_check(window,values):
 	# Source
 	Source_inst = connect_to_GPIB(values['source_1'],['Current',values['source_1_channel'],4,0.1,'DC',8e-6,160e-6])
+	if not Source_inst:
+		return
 	window.Refresh()
 	### Turn on current and measure resistance
 	Source_inst.set_value(1e-3)
@@ -196,6 +202,8 @@ def resistance_check(window,values):
 	window.Refresh()
 
 def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
+	### Get parameters from GUI
+	user_name = values['User_name']
 	device_name = values['Device_name']
 	show_SMSR = values['SMSR']
 	show_FWHM = values['FWHM']
@@ -307,7 +315,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	pulse_width_5 = int(values['pulsed_width_5'])*1e-6
 	pulse_delay_5 = int(values['pulsed_delay_5'])*1e-6
 	### Initialize other parameters
-	characterization_directory = os.path.join('..','Data')
+	characterization_directory = os.path.join('..','Data',user_name)
 	### Connect to Lab Equipment
 	Source_1_mode = Source_1_mode.capitalize()
 	Source_2_mode = Source_2_mode.capitalize()
@@ -316,12 +324,21 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_5_mode = Source_5_mode.capitalize()
 	# Sources
 	Source_inst_1 = connect_to_GPIB(Source_1,[Source_1_mode,Source_1_channel,protection_voltage_1,protection_current_1,waveform_1,pulse_delay_1,pulse_width_1])
+	window.Refresh()
 	Source_inst_2 = connect_to_GPIB(Source_2,[Source_2_mode,Source_2_channel,protection_voltage_2,protection_current_1,waveform_2,pulse_delay_2,pulse_width_2])
+	window.Refresh()
 	Source_inst_3 = connect_to_GPIB(Source_3,[Source_3_mode,Source_3_channel,protection_voltage_3,protection_current_1,waveform_3,pulse_delay_3,pulse_width_3])
+	window.Refresh()
 	Source_inst_4 = connect_to_GPIB(Source_4,[Source_4_mode,Source_4_channel,protection_voltage_4,protection_current_1,waveform_4,pulse_delay_4,pulse_width_4])
+	window.Refresh()
 	Source_inst_5 = connect_to_GPIB(Source_5,[Source_5_mode,Source_5_channel,protection_voltage_5,protection_current_1,waveform_5,pulse_delay_5,pulse_width_5])
+	window.Refresh()
+	if not Source_inst_1 or not Source_inst_2 or not Source_inst_3 or not Source_inst_4 or not Source_inst_5:
+		return
 	# Spectrum Analyzer
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
+	if not spectrum_analyzer_inst:
+		return
 	### Convert from mA to A
 	if Source_1_mode == 'Current':
 		Source_step_1 = Source_step_1*1e-3
@@ -346,7 +363,8 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	### Sweep current and collect data
 	sweep_num = 0
 	if Source_1.lower() == 'off':
-		raise Exception(colour.red+" Source #1 must be enabled"+colour.end)
+		psg.popup("Source #1 must be enabled.")
+		return
 	Source_input_list_1 = [x for x in np.arange(Source_start_1,Source_stop_1+Source_step_1/2,Source_step_1)]
 	if Source_2.lower() == 'off':
 		Source_input_list_2 = [0]
@@ -506,4 +524,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	window.refresh()
 
 if __name__ == "__main__":
-	GUI()
+	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+		GUI(1)
+	else:
+		GUI()

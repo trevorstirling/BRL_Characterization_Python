@@ -6,15 +6,14 @@
 # device_source5value_source4value_source3value_source2value.txt        #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 20, 2023                                                   #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import time
-from common_functions import connect_to_PM,connect_to_GPIB,plot_LIV
-from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI
+from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI,connect_to_PM,connect_to_GPIB,plot_LIV
 import PySimpleGUI as psg
 
 font = 'Tahoma'
@@ -27,14 +26,19 @@ def current_source_layout(num):
 	[psg.Text('Start:'),psg.InputText('1', key='start_'+str(num), size=(4,1), enable_events=True),psg.Text('Step:'),psg.InputText('1', key='step_'+str(num), size=(4,1), enable_events=True),psg.Text('Stop:'),psg.InputText('100', key='stop_'+str(num), size=(4,1), enable_events=True),psg.Text('[mA]',key='units_'+str(num)),psg.Checkbox('Pulsed', size=(8,1), key='pulsed_'+str(num), default=False, enable_events=True),psg.Text('Pulse Width [μs]:', key='pulse_width_'+str(num)+'_text', visible=False),psg.InputText('8', key='pulse_width_'+str(num), size=(2,1), enable_events=True, visible=False),psg.Text('Pulse Delay [μs]:', key='pulse_delay_'+str(num)+'_text', visible=False),psg.InputText('160', key='pulse_delay_'+str(num), size=(4,1), enable_events=True, visible=False)]]
 	return layout
 
-def GUI():
+def GUI(debug=False):
 	#Options
 	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
 	default_source = 'B2902A'
 	num_sources = 1
 	#Define layout
-	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
+	if debug:
+		print_window = []
+	else:
+		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
+	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Button('', image_data=minus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='remove_source'), psg.Text('Add or Remove Sources'), psg.Button('', image_data=plus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='add_source')],
 	[psg.Push(),psg.Text('--------------- Power Meter Options ---------------',font=(font, 20)),psg.Push()],
 	[psg.Text('Power Meter:'), psg.Combo(['Newport', 'K2520'], default_value='Newport', size=(7,1), enable_events=True, readonly=True, key='Power_meter'), psg.Text('Channel 1:', key='Channel_1_text'), psg.Combo(['A','B'], default_value='A', size=(2,1), readonly=True, key='Channel_1'), psg.Text('Channel 2:', key='Channel_2_text'), psg.Combo(['A','B','OFF'], default_value='OFF', size=(4,1), readonly=True, key='Channel_2')],
@@ -51,7 +55,7 @@ def GUI():
 	[psg.Push(),psg.pin(psg.Column(current_source_title(5),key='source_5_title',visible=False)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(5),key='source_5_options',visible=False))],
 	[BluePSGButton('Ω Check'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('LIV'), BluePSGButton('Exit')], #push adds flexible whitespace
-	[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
+	print_window]
 	#Create window
 	window = psg.Window('LIV',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -172,6 +176,8 @@ def resistance_check(window,values):
 	# Source
 	Source_inst = connect_to_GPIB(values['source_1'],['Current',values['source_1_channel'],4,0.1,'DC',8e-6,160e-6])
 	window.Refresh()
+	if not Source_inst:
+		return
 	### Turn on current and measure resistance
 	Source_inst.set_value(1e-3)
 	Source_inst.set_output('ON')
@@ -185,6 +191,8 @@ def resistance_check(window,values):
 	window.Refresh()
 
 def LIV(window,values):
+	### Get parameters from GUI
+	user_name = values['User_name']
 	device_name = values['Device_name']
 	plot_current_density = values['plot_density']
 	device_length = float(values['device_length'])
@@ -300,7 +308,7 @@ def LIV(window,values):
 	pulse_width_5 = int(values['pulse_width_5'])*1e-6
 	pulse_delay_5 = int(values['pulse_delay_5'])*1e-6
 	### Initialize other parameters
-	characterization_directory = os.path.join('..','Data')
+	characterization_directory = os.path.join('..','Data',user_name)
 	if pulsed_1:
 		device_name += '_pulsed'
 	### Connect to Lab Equipment
@@ -320,6 +328,8 @@ def LIV(window,values):
 	window.Refresh()
 	Source_inst_5 = connect_to_GPIB(Source_5,[Source_5_mode,Source_5_channel,protection_voltage_5,protection_current_1,waveform_5,pulse_delay_5,pulse_width_5])
 	window.Refresh()
+	if not Source_inst_1 or not Source_inst_2 or not Source_inst_3 or not Source_inst_4 or not Source_inst_5:
+		return
 	# Power Meter
 	two_facet_LIV = False
 	if Power_meter == 'K2520':
@@ -332,8 +342,10 @@ def LIV(window,values):
 		if pulsed_1:
 			psg.popup("The K2520 power meter must be used for pulsed mode")
 			return
-		from Interfaces import Newport_PM_Interface
+		from GUI_Interfaces import Newport_PM_Interface
 		PM_inst = connect_to_PM(Power_meter_channel_1)
+		if not PM_inst:
+			return
 		window.Refresh()
 		if Power_meter_channel_2 == 'A' or Power_meter_channel_2 == 'B':
 			two_facet_LIV = True
@@ -551,4 +563,7 @@ def LIV(window,values):
 	window.Refresh()
 
 if __name__ == "__main__":
-	GUI()
+	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+		GUI(1)
+	else:
+		GUI()

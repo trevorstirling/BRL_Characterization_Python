@@ -18,11 +18,11 @@
 # -set_mode()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: April 19, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 
 class B2902A:
 	def __init__(self, rm, address, channel_input, mode):
@@ -30,14 +30,14 @@ class B2902A:
 		self.GPIB.timeout = 30000 #[ms]
 		self.mode = mode.capitalize()
 		if self.mode != 'Current' and self.mode != 'Voltage':
-			raise Exception(colour.red+colour.alert+" The B2902A mode must be Current or Voltage"+colour.end)
+			psg.popup("The B2902A mode must be Current or Voltage")
 		#Set Channel
 		if str(channel_input) == '1' or channel_input == 'A':
 			self.channel = '1'
 		elif str(channel_input) == '2' or channel_input == 'B':
 			self.channel = '2'
 		else:
-			raise Exception(colour.red+colour.alert+" The B2902A channel must be 1 or 2"+colour.end)
+			psg.popup("The B2902A channel must be 1 or 2")
 		self.safe_turn_off()
 		#Set Mode
 		self.set_mode()
@@ -144,7 +144,7 @@ class B2902A:
 			#Native resistance measurement returns 9e37
 			return self.read_value('Voltage')/self.read_value('Current')
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")
 	
 	def read_setting(self):
 		if self.get_mode() == 'Voltage':
@@ -160,7 +160,7 @@ class B2902A:
 			elif state == 'OFF':
 				self.GPIB.write(':OUTP'+self.channel+':STAT OFF')
 			else:
-				raise Exception(colour.red+colour.alert+" Channel state must be ON or OFF"+colour.end)
+				psg.popup("Channel state must be ON or OFF")
 
 	def set_mode(self):
 		if self.mode == 'Current':

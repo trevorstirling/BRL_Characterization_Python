@@ -1,12 +1,11 @@
 #########################################################################
 # Script to take an Autocorrelation using a piezo stage and lock-in     #
 # amplifier                                                             #
-# GUI added by Eman Shayeb                                              #
 # Data is saved as                                                      #
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 21, 2023                                                   #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -17,16 +16,20 @@ from matplotlib.animation import FuncAnimation
 import sys
 import os
 import time
-from common_functions import colour,connect_to_Piezo,connect_to_GPIB,plot_autocorrelator
-from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min,get_file_locations_GUI
+from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min,get_file_locations_GUI,connect_to_Piezo,connect_to_GPIB,plot_autocorrelator
 import PySimpleGUI as psg
 
-def GUI():
+def GUI(debug=False):
 	#Options
 	psg.set_options(font=('Tahoma', 16))
 	psg.theme('DarkBlue14')
 	#Define layout
-	layout = [[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
+	if debug:
+		print_window = []
+	else:
+		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
+	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Push(),psg.Text('--------------- Lock-in Amplifier Options ---------------',font=('Tahoma', 20)),psg.Push()],
 	[psg.Text('Lock-in Amplifier:'), psg.Combo(['SR830'], default_value='SR830', size=(8,1), enable_events=True, readonly=True, key='Lock-in'), psg.Text('Time Constant:'), psg.Combo(['10 μs','30 μs','100 μs','300 μs','1 ms','3 ms','10 ms','30 ms','100 ms','300 ms','1 s','3 s','10 s','30 s','100 s','300 s','1000 s','3000 s','10,000 s','30,000 s'], default_value='30 μs', size=(7,1), readonly=True, key='Time_constant')],
 	[psg.Text('Number of Points:'), psg.InputText('16000', key='num_points', size=(8,1), enable_events=True), psg.Text('Sampling Rate:'), psg.Combo(['62.5 mHz','125 mHz','250 mHz','500 mHz','1 Hz','2 Hz','4 Hz','8 Hz','16 Hz','32 Hz','64 Hz','128 Hz','256 Hz','512 Hz'], default_value='512 Hz', size=(8,1), enable_events=True, readonly=True, key='Sampling_rate'), psg.Text("Approx time: "+str(round(16000/512))+"s", key='approx_time')],
@@ -36,7 +39,7 @@ def GUI():
 	[psg.Push(),psg.Text('--------------- Plot Options ---------------',font=('Tahoma', 20)),psg.Push()],
 	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True),psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('2.041', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
 	[BluePSGButton('Monitor Power'), BluePSGButton('Default 1'), BluePSGButton('Default 2'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Autocorrelate'), BluePSGButton('Exit')], #push adds flexible whitespace
-	[psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]]
+	print_window]
 	#Create window
 	window = psg.Window('Autocorrelation',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
@@ -89,8 +92,12 @@ def GUI():
 		#data validation
 		elif event == 'num_points' and len(values['num_points']):
 			enforce_number(window,values,event,decimal_allowed=False)
-			enforce_max_min(window,values,event,16383,0)
-			update_approx_time(window,values)
+			_, values = window.read(timeout=1)
+			if len(values['num_points']):
+				enforce_max_min(window,values,event,16383,6)
+			_, values = window.read(timeout=1)
+			if len(values['num_points']):
+				update_approx_time(window,values)
 		elif event == 'Sampling_rate':
 			update_approx_time(window,values)
 		elif event == 'Piezo_start_loc':
@@ -101,7 +108,9 @@ def GUI():
 			enforce_number(window,values,event)
 		elif event == 'step_amplitude' and len(values['step_amplitude']):
 			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
-			enforce_max_min(window,values,event,50,-50)
+			_, values = window.read(timeout=1)
+			if len(values['num_points']):
+				enforce_max_min(window,values,event,50,-50)
 	window.close()
 
 def Monitor_power(values):
@@ -112,6 +121,8 @@ def Monitor_power(values):
 	#Main Code
 	num_points = round(display_time/update_time)
 	PM_inst = connect_to_GPIB(Lock_in_amp)
+	if not PM_inst:
+		return
 	#initialize vectors
 	x = [(i-num_points+1)*update_time for i in range(num_points)]
 	y = [float('NaN') for i in x]
@@ -164,6 +175,7 @@ def update_approx_time(window,values):
 
 def Autocorrelation(window,values):
 	### Get parameters from GUI
+	user_name = values['User_name']
 	device_name = values['Device_name']
 	Lock_in_amp = values['Lock-in']
 	Lock_in_time_constant = values['Time_constant']
@@ -199,7 +211,7 @@ def Autocorrelation(window,values):
 	elif Lock_in_sampling_rate_units == 'Hz':
 		Lock_in_sampling_rate = int(Lock_in_sampling_rate.split(" ")[0])
 	### Initialize other parameters
-	characterization_directory = os.path.join('..','Data')
+	characterization_directory = os.path.join('..','Data',user_name)
 	if Lock_in_time_constant > 100e-6:
 		response = psg.popup_yes_no("The lock-in time constant should be less than the chopping speed (10 kHz = 100 μs). Do you want to continue?",title="Warning")
 		if response == "Yes":
@@ -219,9 +231,13 @@ def Autocorrelation(window,values):
 	# Lock-in Amplifier
 	Lock_in_inst = connect_to_GPIB(Lock_in_amp)
 	window.Refresh()
+	if not Lock_in_inst:
+		return
 	Lock_in_inst.set_time_constant(Lock_in_time_constant)
 	# Piezo
 	Piezo_inst = connect_to_Piezo(Piezo_port,Piezo_channel,Piezo_axis)
+	if not Piezo_inst:
+		return
 	window.Refresh()
 	### Run Scan
 	# Initialize Lock-in Amplifier
@@ -302,4 +318,7 @@ def Autocorrelation(window,values):
 	window.Refresh()
 
 if __name__ == "__main__":
-	GUI()
+	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+		GUI(1)
+	else:
+		GUI()

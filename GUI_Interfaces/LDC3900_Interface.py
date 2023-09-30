@@ -25,11 +25,11 @@
 #        consider implementing a check for error if no device connected #
 #																		#
 # Author: Trevor Stirling												#
-# Date: April 19, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import time
-from common_functions import colour
+import PySimpleGUI as psg
 
 class LDC3900:
 	def __init__(self, rm, address, channel_input, mode,num_channels):
@@ -38,18 +38,18 @@ class LDC3900:
 		elif num_channels == 16:
 			self.name = "LDC3916"
 		else:
-			raise Exception(colour.red+colour.alert+" The LDC3900 must have 8 or 16 channels"+colour.end)
+			psg.popup("The LDC3900 must have 8 or 16 channels")
 		self.GPIB = rm.open_resource(address)
 		self.GPIB.timeout = 30000 #[ms]
 		self.mode = mode.capitalize()
 		if self.mode != 'Current':
-			raise Exception(colour.red+colour.alert+" The "+self.name+" mode must be Current"+colour.end)
+			psg.popup("The "+self.name+" mode must be Current")
 		#Set Channel
 		if str(channel_input) in [str(i) for i in range(1,num_channels+1)]:
 			self.channel = str(channel_input)
 			self.set_channel()
 		else:
-			raise Exception(colour.red+colour.alert+" The "+self.name+" channel must an integer 1 to "+str(num_channels)+colour.end)
+			psg.popup("The "+self.name+" channel must an integer 1 to "+str(num_channels))
 		self.safe_turn_off()
 		self.set_voltage_protection(4) #[V]
 
@@ -108,7 +108,7 @@ class LDC3900:
     
 	def set_waveform(self, waveform, delay=20e-6, width=1e-6):
 		if waveform == 'PULSED':
-			raise Exception(colour.red+colour.alert+" "+self.name+" can not operate in pulsed mode"+colour.end)
+			psg.popup(self.name+" can not operate in pulsed mode")
 
 	def set_value(self, value):
 		self.set_channel()
@@ -136,7 +136,7 @@ class LDC3900:
 		elif type == 'Resistance':
 			return self.read_value('Voltage')/self.read_value('Current')
 		else:
-			raise Exception(colour.red+colour.alert+" Read Error: "+str(type)+" Is An Invalid Data Name"+colour.end)
+			psg.popup("Read Error: "+str(type)+" Is An Invalid Data Name")
 		return result
 
 	def read_setting(self):
@@ -151,7 +151,7 @@ class LDC3900:
 		elif state == 'OFF':
 			self.GPIB.write('LAS:OUT OFF')
 		else:
-			raise Exception(colour.red+colour.alert+" Channel state must be ON or OFF"+colour.end)
+			psg.popup("Channel state must be ON or OFF")
 
 	def set_mode(self):
 		pass

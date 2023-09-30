@@ -16,13 +16,13 @@
 # -disconnect()															#
 #																		#
 # Author: Trevor Stirling												#
-# Date: Feb 14, 2023													#
+# Date: Sept 29, 2023													#
 #########################################################################
 
 import sys
 import time
 import serial
-from common_functions import colour
+import PySimpleGUI as psg
 
 class Newport_Piezo:
 	def __init__(self, rm, port, channel, axis):
@@ -30,11 +30,11 @@ class Newport_Piezo:
 			self.USB = serial.Serial(port, 921600, timeout=3)
 		else:
 			#self.USB = rm.open_resource(port)
-			raise Exception(colour.red+colour.alert+" Not yet configured for MacOS"+colour.end)
+			psg.popup("Not yet configured for MacOS")
 		if axis in [1,2]:
 			self.axis = str(axis)
 		else:
-			raise Exception(colour.red+colour.alert+" Axis "+str(axis)+" must be 1 or 2"+colour.end)
+			psg.popup("Axis "+str(axis)+" must be 1 or 2")
 		self.set_channel(channel)
 		# Reset device and put into remote mode
 		self.reset()
@@ -42,7 +42,7 @@ class Newport_Piezo:
 			version = self.read_version()
 			print(" Connected to Piezo "+version+" via",port)
 		except:
-			raise Exception(colour.red+colour.alert+" Can not communicate with Piezo, check the port is correct or try disconnecting and reconnecting it"+colour.end)
+			psg.popup("Can not communicate with Piezo, check the port is correct or try disconnecting and reconnecting it")
 		
 	def write(self,command_string):
 		self.USB.write(command_string.encode()+'\r\n'.encode())
@@ -55,14 +55,14 @@ class Newport_Piezo:
 		self.write(query_string)
 		result = self.read()
 		if result == '':
-			raise Exception(colour.red+colour.alert+" No response after query: "+query_string+colour.end)
+			psg.popup("No response after query: "+query_string)
 		return result
 	
 	def set_channel(self,channel):
 		if channel in [1,2,3,4]:
 			self.write('CC'+str(channel))
 		else:
-			raise Exception(colour.red+colour.alert+" Channel "+str(channel)+" must be 1, 2, 3, or 4"+colour.end)
+			psg.popup("Channel "+str(channel)+" must be 1, 2, 3, or 4")
 	
 	def wait_for_complete(self,timeout=10000):
 		for _ in range(timeout):
@@ -70,7 +70,7 @@ class Newport_Piezo:
 			self.write(self.axis+'TS')
 			if self.axis+'TS0' in self.read():
 				return 0
-		raise Exception(colour.red+colour.alert+" Timeout from piezo. Check connection or increase timeout time if piezo is still moving"+colour.end)
+		psg.popup("Timeout from piezo. Check connection or increase timeout time if piezo is still moving")
 
 	def reset(self):
 		self.write('RS')
@@ -84,7 +84,7 @@ class Newport_Piezo:
 		if speed in [-1700,-666,-100,-5,5,100,666,1700]:
 			self.write(self.axis+'MV'+str(speed))
 		else:
-			raise Exception(colour.red+colour.alert+" Speed "+str(speed)+" must be plus or minus 5, 100, 666, or 1700"+colour.end)
+			psg.popup("Speed "+str(speed)+" must be plus or minus 5, 100, 666, or 1700")
 
 	def start_jog(self, speed=666):
 		speeds = [0,5,100,1700,666]
@@ -93,7 +93,7 @@ class Newport_Piezo:
 			sign = int(speed/abs(speed))
 			self.write(self.axis+'JA'+str(sign*range_num))
 		else:
-			raise Exception(colour.red+colour.alert+" Speed "+str(speed)+" must be plus or minus 5, 100, 666, or 1700"+colour.end)
+			psg.popup("Speed "+str(speed)+" must be plus or minus 5, 100, 666, or 1700")
 
 	def stop_motion(self):
 		self.write(self.axis+'ST')
@@ -105,19 +105,19 @@ class Newport_Piezo:
 		result = self.query(self.axis+'TP')
 		if 'TP' in result:
 			return int(result[3:])
-		raise Exception(colour.red+colour.alert+" Error on position read, received "+str(result)+colour.end)
+		psg.popup("Error on position read, received "+str(result))
 
 	def set_step_amplitude(self, amplitude):
 		if amplitude <=50 and amplitude >= -50:
 			self.write(self.axis+'SU'+str(amplitude))
 		else:
-			raise Exception(colour.red+colour.alert+" Step Amplitude "+str(amplitude)+" must be between -50 and 50"+colour.end)
+			psg.popup("Step Amplitude "+str(amplitude)+" must be between -50 and 50")
 
 	def read_version(self):
 		result = self.query('VE?')
 		if 'AG-UC8' in result:
 			return result
-		raise Exception(colour.red+colour.alert+" Failed to read version from piezo"+colour.end)
+		psg.popup("Failed to read version from piezo")
 
 	def disconnect(self):
 		self.USB.close()
