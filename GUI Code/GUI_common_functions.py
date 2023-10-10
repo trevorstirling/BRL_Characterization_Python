@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 29, 2023                                                   #
+# Date: Oct 9, 2023                                                     #
 #########################################################################
 
 import PySimpleGUI as psg
@@ -428,7 +428,7 @@ def plot_spectrum(device_name, x_data, power, show_max=False, show_max_numbers=T
 		else:
 			FHWM_text_x = FW_end
 		if x_is_freq:
-			FWHM_text = plt.text(FHWM_text_x,HM+3,' FWHM = '+str(round(FWHM,2))+' GHz ')
+			FWHM_text = plt.text(FHWM_text_x,HM+3,' FWHM = '+str(round(FWHM*1e3,2))+' MHz ')
 		else:
 			FWHM_text = plt.text(FHWM_text_x,HM+3,' FWHM = '+str(round(FWHM,2))+' nm ')
 		if (x_data[-1]+x_data[0])/2 < (FW_start+FW_end)/2:
@@ -465,8 +465,7 @@ def envelope_indices(s, trough_reduction_factor=1, peak_reduction_factor=1):
 	peak_indices_reduced = peak_indices[[i+np.argmax(s[peak_indices[i:i+peak_reduction_factor]]) for i in range(0,len(peak_indices),peak_reduction_factor)]]
 	return trough_indices_reduced,peak_indices_reduced
 
-def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=20, plot_fit=True, plot_envelope=False, plot_lower=False, x_axis_calibrated=True, normalize=True, cutoff_freq=200e12):
-	fit_type = 'low_pass' #Should always be 'low_pass', left the option for 'envelope' to accomodate legacy code, but low_pass has been shown to be more mathematically sound
+def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=20, plot_fit=True, plot_envelope=False, plot_lower=False, x_axis_calibrated=True, normalize=True, cutoff_freq=200e12, fit_type='low_pass'):
 	if normalize: #normalize to a peak of 8 for an interferometric autocorrelation
 		intensity_max = max(intensity)
 		intensity = [i*8/intensity_max for i in intensity]

@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 29, 2023                                                   #
+# Date: Oct 9, 2023                                                     #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -37,7 +37,7 @@ def GUI(debug=False):
 	[psg.Text('Piezo:'), psg.Combo(['Newport'], default_value='Newport', size=(8,1), enable_events=True, readonly=True, key='Piezo'), psg.Text('Speed:'), psg.Combo([5,100,666,1700], default_value=100, size=(4,1), readonly=True, key='Piezo_speed'), psg.Text('Hz'),psg.Text('  Channel:'), psg.Combo([1,2,3,4], default_value=1, size=(2,1), readonly=True, key='Piezo_channel'),psg.Text('Axis:'), psg.Combo([1,2], default_value=1, size=(2,1), readonly=True, key='Piezo_axis'),psg.Text("Step Amplitude:", visible=False), psg.InputText('50', key='step_amplitude', size=(3,1), enable_events=True, visible=False), psg.Text('Piezo Port:'), psg.InputText('COM3', key='piezo_port', size=(5,1))],
 	[psg.Text('Move before scan:'), psg.InputText('-1500', key='Piezo_start_loc', size=(8,1), enable_events=True), psg.Text('steps'), psg.Checkbox('Return to start', size=(15,1), key='return_to_start', default=True, enable_events=True),psg.Text("Reverse Correction Factor", key='reverse_factor_text', visible=True), psg.InputText('0.8', key='reverse_correction_factor', size=(5,1), enable_events=True, visible=True)],
 	[psg.Push(),psg.Text('--------------- Plot Options ---------------',font=('Tahoma', 20)),psg.Push()],
-	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True),psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('2.041', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
+	[psg.Checkbox('Normalize', size=(10,1), key='normalize', default=True), psg.Text('Fit Type'), psg.Combo(['Low Pass', 'Envelope'], default_value='Low Pass', size=(8,1), readonly=True, key='fit_type'), psg.Checkbox('Is Calibrated', size=(12,1), key='is_calibrated', default=False, enable_events=True), psg.Text("Calibration Factor", key='calib_factor_text', visible=False), psg.InputText('2.041', key='time_scale_factor', size=(6,1), enable_events=True, visible=False)],
 	[BluePSGButton('Monitor Power'), BluePSGButton('Default 1'), BluePSGButton('Default 2'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Autocorrelate'), BluePSGButton('Exit')], #push adds flexible whitespace
 	print_window]
 	#Create window
@@ -76,9 +76,11 @@ def GUI(debug=False):
 			window['is_calibrated'].update(value=True)
 			window['calib_factor_text'].update(visible=True)
 			window['time_scale_factor'].update(visible=True)
-			window['time_scale_factor'].update(value='2.041')
+			window['time_scale_factor'].update(value='1.954')
 			window['Piezo_start_loc'].update(value='-1500')
 			window['reverse_correction_factor'].update(value='0.8')
+			_, values = window.read(timeout=1)
+			update_approx_time(window,values)
 		elif event == 'Default 2':
 			window['num_points'].update(value='16000')
 			window['Sampling_rate'].update(value='256 Hz')
@@ -89,6 +91,8 @@ def GUI(debug=False):
 			window['time_scale_factor'].update(value='0.146')
 			window['Piezo_start_loc'].update(value='-16000')
 			window['reverse_correction_factor'].update(value='0.85')
+			_, values = window.read(timeout=1)
+			update_approx_time(window,values)
 		#data validation
 		elif event == 'num_points' and len(values['num_points']):
 			enforce_number(window,values,event,decimal_allowed=False)
@@ -136,6 +140,7 @@ def Monitor_power(values):
 	start_time = time.time()
 	animation = FuncAnimation(fig, update_power_monitor, fargs=(PM_inst,x,y,fig,line,start_time), interval=1)
 	plt.show()
+	PM_inst.close()
 
 def update_power_monitor(frame,PM_inst,x,y,fig,line,start_time):
 	#read power
@@ -191,6 +196,7 @@ def Autocorrelation(window,values):
 	start_point = int(values['Piezo_start_loc'])
 	num_points = int(values['num_points'])
 	normalize_autocorrelation = values['normalize']
+	fit_type = values['fit_type']
 	is_calibrated = values['is_calibrated']
 	time_scale_factor = float(values['time_scale_factor'])
 	display_fig = values['Display_fig']
@@ -218,6 +224,10 @@ def Autocorrelation(window,values):
 		   pass
 		if response == "No":
 		   return
+	if fit_type == 'Envelope':
+		fit_type = 'envelope'
+	else:
+		fit_type = 'low_pass'
 	### Prepare loading bar window
 	loading_layout = [[psg.Text('Autocorrelation Progress: 0%',key='progress_text')],
 	[psg.ProgressBar(num_points, orientation='h', size=(20, 20), expand_x=True, key='progress_bar')],
@@ -298,7 +308,7 @@ def Autocorrelation(window,values):
 	if display_fig or save_fig:
 		if is_calibrated:
 			x_axis = [i/time_scale_factor for i in x_axis]
-		fig, FWHM = plot_autocorrelator(device_name, x_axis, intensity, x_axis_calibrated=is_calibrated, normalize=normalize_autocorrelation)
+		fig, FWHM = plot_autocorrelator(device_name, x_axis, intensity, x_axis_calibrated=is_calibrated, normalize=normalize_autocorrelation, fit_type=fit_type)
 		if save_fig:
 			fig.savefig(png_location,bbox_inches='tight')
 			print(" Figure saved to",png_location)
@@ -314,11 +324,12 @@ def Autocorrelation(window,values):
 	if not is_calibrated:
 		print(" If this is a calibration run with a 110 fs pulse, use time_scale_factor = "+"{:.3f}".format(FWHM/110))
 		window.Refresh()
+	Lock_in_inst.close()
 	print(" Disconnected from instruments")
 	window.Refresh()
 
 if __name__ == "__main__":
-	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+	if len(sys.argv)-1 == 1 and (sys.argv[1].lower() == 'debug' or sys.argv[1] == '1'):
 		GUI(1)
 	else:
 		GUI()

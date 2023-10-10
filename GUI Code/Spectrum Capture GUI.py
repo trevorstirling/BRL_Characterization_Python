@@ -2,7 +2,7 @@
 # Script to capture spectrum using various spectrum analyzers           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 29, 2023                                                   #
+# Date: Oct 9, 2023                                                     #
 #########################################################################
 
 import os
@@ -104,12 +104,14 @@ def set_center(values):
 		spectrum_analyzer_inst.set_wavelength(values['wavelength'])
 	else:
 		spectrum_analyzer_inst.set_frequency(float(values['wavelength'])*1e9) #convert GHz to Hz
+	spectrum_analyzer_inst.close()
 
 def peak_to_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	if not spectrum_analyzer_inst:
 		return
 	spectrum_analyzer_inst.peak_to_center()
+	spectrum_analyzer_inst.close()
 
 def set_span(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -119,6 +121,7 @@ def set_span(values):
 		spectrum_analyzer_inst.set_span(values['span'])
 	else:
 		spectrum_analyzer_inst.set_span(float(values['span'])*1e9) #convert GHz to Hz
+	spectrum_analyzer_inst.close()
 
 def sweep_SA(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -129,12 +132,14 @@ def sweep_SA(window, values):
 	spectrum_analyzer_inst.sweep(values['Channel'], print_status=False)
 	print(" Sweep complete")
 	window.refresh()
+	spectrum_analyzer_inst.close()
 
 def sweep_continuously(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	if not spectrum_analyzer_inst:
 		return
 	spectrum_analyzer_inst.sweep_continuous(1)
+	spectrum_analyzer_inst.close()
 
 def Spectrum_Analyzer_Capture(window,values):
 	### Get parameters from GUI
@@ -194,11 +199,12 @@ def Spectrum_Analyzer_Capture(window,values):
 			plt.show()
 		else:
 			plt.close()
+	spectrum_analyzer_inst.close()
 	print(" Disconnected from Spectrum Analyzer")
 	window.refresh()
 
 if __name__ == "__main__":
-	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+	if len(sys.argv)-1 == 1 and (sys.argv[1].lower() == 'debug' or sys.argv[1] == '1'):
 		GUI(1)
 	else:
 		GUI()

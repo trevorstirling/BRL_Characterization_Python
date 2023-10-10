@@ -1,6 +1,6 @@
 #########################################################################
-# Functions to interface with AQ6317B optical spectrum analyzer         #
-# OSA common functions:                                                 #
+# Functions to interface with E4407B electrical spectrum analyzer       #
+# SA common functions:                                                  #
 # -initialize()                                                         #
 # -capture()                                                            #
 # -is_sweeping()                                                        #
@@ -19,7 +19,7 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 29, 2023                                                   #
+# Date: Oct 6, 2023                                                     #
 #########################################################################
 
 import numpy as np

@@ -2,7 +2,7 @@
 # Script to monitor power from Newport Power Meter                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Sept 29, 2023                                                   #
+# Date: Oct 9, 2023                                                     #
 #########################################################################
 
 import matplotlib.pyplot as plt
@@ -104,6 +104,8 @@ def Power_Monitor(window,values):
 	start_time = time.time()
 	animation = FuncAnimation(fig, update, fargs=(PM_inst,x,y,fig,line,start_time,scale), interval=1)
 	plt.show()
+	if Power_meter == 'K2520' or Power_meter == 'SR830':
+		PM_inst.close()
 
 def update(frame,PM_inst,x,y,fig,line,start_time,scale):
 	#read power
@@ -120,7 +122,7 @@ def update(frame,PM_inst,x,y,fig,line,start_time,scale):
 	fig.gca().autoscale_view()
 
 if __name__ == "__main__":
-	if len(sys.argv)-1 == 1 and sys.argv[1].lower() == 'debug':
+	if len(sys.argv)-1 == 1 and (sys.argv[1].lower() == 'debug' or sys.argv[1] == '1'):
 		GUI(1)
 	else:
 		GUI()
