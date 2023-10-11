@@ -2,10 +2,10 @@
 # Script to capture spectrum using various spectrum analyzers           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 10, 2023                                                    #
 #########################################################################
 
-import os
+import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
 from GUI_common_functions import BluePSGButton,enforce_number,get_file_locations_GUI,connect_to_GPIB,plot_spectrum
@@ -104,14 +104,14 @@ def set_center(values):
 		spectrum_analyzer_inst.set_wavelength(values['wavelength'])
 	else:
 		spectrum_analyzer_inst.set_frequency(float(values['wavelength'])*1e9) #convert GHz to Hz
-	spectrum_analyzer_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def peak_to_center(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	if not spectrum_analyzer_inst:
 		return
 	spectrum_analyzer_inst.peak_to_center()
-	spectrum_analyzer_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def set_span(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -121,7 +121,7 @@ def set_span(values):
 		spectrum_analyzer_inst.set_span(values['span'])
 	else:
 		spectrum_analyzer_inst.set_span(float(values['span'])*1e9) #convert GHz to Hz
-	spectrum_analyzer_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def sweep_SA(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
@@ -132,14 +132,14 @@ def sweep_SA(window, values):
 	spectrum_analyzer_inst.sweep(values['Channel'], print_status=False)
 	print(" Sweep complete")
 	window.refresh()
-	spectrum_analyzer_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def sweep_continuously(values):
 	spectrum_analyzer_inst = connect_to_GPIB(values['Spectrum_analyzer'])
 	if not spectrum_analyzer_inst:
 		return
 	spectrum_analyzer_inst.sweep_continuous(1)
-	spectrum_analyzer_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def Spectrum_Analyzer_Capture(window,values):
 	### Get parameters from GUI
@@ -163,6 +163,7 @@ def Spectrum_Analyzer_Capture(window,values):
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
 	if not spectrum_analyzer_inst:
 		return
+	x_is_freq = spectrum_analyzer_inst.isESA:
 	### Collect data
 	if spectrum_analyzer_inst.is_sweeping():
 		psg.popup("Spectrum Analyzer is currently sweeping. Stop before capturing.")
@@ -172,12 +173,14 @@ def Spectrum_Analyzer_Capture(window,values):
 	x_data, power = spectrum_analyzer_inst.capture(spectrum_analyzer_channel,print_status=False)
 	print(" Capture complete")
 	window.refresh()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
+	print(" Disconnected from Spectrum Analyzer")
 	#Save data to file
 	if save_data:
 		full_data = np.zeros((len(power), 2))
 		full_data[:,0] = x_data
 		full_data[:,1] = power
-		if spectrum_analyzer_inst.isESA:
+		if x_is_freq:
 			np.savetxt(csv_location, full_data , delimiter=',', header='Frequency [GHz], Power [dBm]', comments='')
 		else:
 			np.savetxt(csv_location, full_data , delimiter=',', header='Wavelength [nm], Power [dBm]', comments='')
@@ -185,10 +188,7 @@ def Spectrum_Analyzer_Capture(window,values):
 		window.refresh()
 	#Plot data
 	if display_fig or save_fig:
-		if spectrum_analyzer_inst.isESA:
-			fig = plot_spectrum(device_name, x_data, power, x_is_freq=True, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
-		else:
-			fig = plot_spectrum(device_name, x_data, power, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
+		fig = plot_spectrum(device_name, x_data, power, x_is_freq=x_is_freq, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
 		if save_fig:
 			fig.savefig(png_location,bbox_inches='tight')
 			print(" Figure saved to",png_location)
@@ -199,8 +199,6 @@ def Spectrum_Analyzer_Capture(window,values):
 			plt.show()
 		else:
 			plt.close()
-	spectrum_analyzer_inst.close()
-	print(" Disconnected from Spectrum Analyzer")
 	window.refresh()
 
 if __name__ == "__main__":

@@ -3,12 +3,12 @@
 # equipment                                                             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 10, 2023                                                    #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import sys, os
 import time
 from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI,connect_to_GPIB,plot_spectrum
 import PySimpleGUI as psg
@@ -200,7 +200,7 @@ def resistance_check(window,values):
 	window.Refresh()
 	print(" Disconnected from",values['source_1'])
 	window.Refresh()
-	Source_inst.close()
+	Source_inst.GPIB.control_ren(0)
 
 def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	### Get parameters from GUI
@@ -340,6 +340,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
 	if not spectrum_analyzer_inst:
 		return
+	x_is_freq = spectrum_analyzer_inst.isESA
 	### Convert from mA to A
 	if Source_1_mode == 'Current':
 		Source_step_1 = Source_step_1*1e-3
@@ -454,6 +455,9 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 						window.refresh()
 						if adjust_center and max(power)>-50:
 							spectrum_analyzer_inst.peak_to_center()
+						if num_sweeps == 1:
+							Source_inst_1.GPIB.control_ren(0)
+							print(" Disconnected from instruments")
 						### Name Output Files
 						scan_name = device_name
 						if Source_5.lower() != 'off':
@@ -489,7 +493,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 							full_data = np.zeros((len(power), 2))
 							full_data[:,0] = x_data
 							full_data[:,1] = power
-							if spectrum_analyzer_inst.isESA:
+							if x_is_freq:
 								np.savetxt(csv_location, full_data , delimiter=',', header='Frequency [GHz], Power [dBm]', comments='')
 							else:
 								np.savetxt(csv_location, full_data , delimiter=',', header='Wavelength [nm], Power [dBm]', comments='')
@@ -497,10 +501,7 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 							window.refresh()
 						#Plot data
 						if display_fig or save_fig:
-							if spectrum_analyzer_inst.isESA:
-								fig = plot_spectrum(scan_name, x_data, power,x_is_freq=True, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
-							else:
-								fig = plot_spectrum(scan_name, x_data, power, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
+							fig = plot_spectrum(scan_name, x_data, power, x_is_freq=x_is_freq, show_SMSR=show_SMSR, show_FWHM=show_FWHM)[0]
 							if save_fig:
 								fig.savefig(png_location,bbox_inches='tight')
 								print(" Figure saved to",png_location)
@@ -521,17 +522,9 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 			Source_inst_4.safe_turn_off()
 	if Source_5.lower() != 'off':
 		Source_inst_5.safe_turn_off()
-		Source_inst_5.close()
-	if Source_4.lower() != 'off':
-		Source_inst_4.close()
-	if Source_3.lower() != 'off':
-		Source_inst_3.close()
-	if Source_2.lower() != 'off':
-		Source_inst_2.close()
-	if Source_1.lower() != 'off':
-		Source_inst_1.close()
-	spectrum_analyzer_inst.close()
-	print(" Disconnected from instruments")
+	if num_sweeps > 1:
+		Source_inst_1.GPIB.control_ren(0)
+		print(" Disconnected from instruments")
 	window.refresh()
 
 if __name__ == "__main__":

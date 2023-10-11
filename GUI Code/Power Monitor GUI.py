@@ -2,12 +2,12 @@
 # Script to monitor power from Newport Power Meter                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 10, 2023                                                    #
 #########################################################################
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import sys
+import sys, os
 import time
 from GUI_common_functions import BluePSGButton,enforce_number,connect_to_GPIB,connect_to_PM
 import PySimpleGUI as psg
@@ -105,7 +105,7 @@ def Power_Monitor(window,values):
 	animation = FuncAnimation(fig, update, fargs=(PM_inst,x,y,fig,line,start_time,scale), interval=1)
 	plt.show()
 	if Power_meter == 'K2520' or Power_meter == 'SR830':
-		PM_inst.close()
+		PM_inst.GPIB.control_ren(0)
 
 def update(frame,PM_inst,x,y,fig,line,start_time,scale):
 	#read power

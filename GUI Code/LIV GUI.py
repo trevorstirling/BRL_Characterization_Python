@@ -6,12 +6,12 @@
 # device_source5value_source4value_source3value_source2value.txt        #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 10, 2023                                                    #
 #########################################################################
 
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import sys, os
 import time
 from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_button,get_file_locations_GUI,connect_to_PM,connect_to_GPIB,plot_LIV
 import PySimpleGUI as psg
@@ -189,7 +189,7 @@ def resistance_check(window,values):
 	window.Refresh()
 	print(" Disconnected from",values['source_1'])
 	window.Refresh()
-	Source_inst.close()
+	Source_inst.GPIB.control_ren(0)
 
 def LIV(window,values):
 	### Get parameters from GUI
@@ -496,7 +496,9 @@ def LIV(window,values):
 								elif Source_1_mode == 'Voltage' and round(Source_input_list_1[i],2)%round(pause_interval,2) == 0:
 									psg.popup(str(round(Source_input_list_1[i],2))+" V: Pausing for mode profile capture. Click OK to continue")
 						Source_inst_1.safe_turn_off()
-
+					if num_sweeps == 1:
+						Source_inst_1.GPIB.control_ren(0)
+						print(" Disconnected from instruments")
 					### Name Output Files
 					scan_name = device_name
 					if Source_5.lower() != 'off':
@@ -560,16 +562,9 @@ def LIV(window,values):
 			Source_inst_4.safe_turn_off()
 	if Source_5.lower() != 'off':
 		Source_inst_5.safe_turn_off()
-		Source_inst_5.close()
-	if Source_4.lower() != 'off':
-		Source_inst_4.close()
-	if Source_3.lower() != 'off':
-		Source_inst_3.close()
-	if Source_2.lower() != 'off':
-		Source_inst_2.close()
-	if Source_1.lower() != 'off':
-		Source_inst_1.close()
-	print(" Disconnected from instruments")
+	if num_sweeps > 1:
+		Source_inst_1.GPIB.control_ren(0)
+		print(" Disconnected from instruments")
 	window.Refresh()
 
 if __name__ == "__main__":

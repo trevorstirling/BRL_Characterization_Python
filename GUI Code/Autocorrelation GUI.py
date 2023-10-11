@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 10, 2023                                                    #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -13,8 +13,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import sys
-import os
+import sys, os
 import time
 from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min,get_file_locations_GUI,connect_to_Piezo,connect_to_GPIB,plot_autocorrelator
 import PySimpleGUI as psg
@@ -140,7 +139,7 @@ def Monitor_power(values):
 	start_time = time.time()
 	animation = FuncAnimation(fig, update_power_monitor, fargs=(PM_inst,x,y,fig,line,start_time), interval=1)
 	plt.show()
-	PM_inst.close()
+	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def update_power_monitor(frame,PM_inst,x,y,fig,line,start_time):
 	#read power
@@ -288,13 +287,14 @@ def Autocorrelation(window,values):
 	if return_to_start:
 		print(" Returning to (the best guess of) the initial position")
 		window.Refresh()
-		#print("locs:",piezo_start_loc,piezo_end_loc)
-		#window.Refresh()
 		Piezo_inst.move_relative(-1*reverse_correction_factor*(piezo_end_loc-piezo_start_loc)-piezo_start_loc) #Labview used a correction factor here
 	print(" Reading Data from SR830")
 	window.Refresh()
 	intensity = Lock_in_inst.read_from_buffer(num_points)
 	Piezo_inst.wait_for_complete(60000)
+	Piezo_inst.disconnect()
+	Lock_in_inst.GPIB.control_ren(0)
+	print(" Disconnected from instruments")
 	x_axis = [i for i in range(num_points)]
 	### Save data to file
 	if save_data:
@@ -320,12 +320,9 @@ def Autocorrelation(window,values):
 			plt.show()
 		else:
 			plt.close()
-	Piezo_inst.disconnect()
 	if not is_calibrated:
 		print(" If this is a calibration run with a 110 fs pulse, use time_scale_factor = "+"{:.3f}".format(FWHM/110))
 		window.Refresh()
-	Lock_in_inst.close()
-	print(" Disconnected from instruments")
 	window.Refresh()
 
 if __name__ == "__main__":
