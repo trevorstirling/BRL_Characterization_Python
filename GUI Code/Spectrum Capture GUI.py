@@ -163,7 +163,7 @@ def Spectrum_Analyzer_Capture(window,values):
 	spectrum_analyzer_inst = connect_to_GPIB(spectrum_analyzer)
 	if not spectrum_analyzer_inst:
 		return
-	x_is_freq = spectrum_analyzer_inst.isESA:
+	x_is_freq = spectrum_analyzer_inst.isESA
 	### Collect data
 	if spectrum_analyzer_inst.is_sweeping():
 		psg.popup("Spectrum Analyzer is currently sweeping. Stop before capturing.")
