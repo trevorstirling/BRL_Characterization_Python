@@ -123,8 +123,8 @@ def Monitor_power(values):
 	Lock_in_amp = values['Lock-in']
 	#Main Code
 	num_points = round(display_time/update_time)
-	PM_inst = connect_to_GPIB(Lock_in_amp)
-	if not PM_inst:
+	Lock_in_inst = connect_to_GPIB(Lock_in_amp)
+	if not Lock_in_inst:
 		return
 	#initialize vectors
 	x = [(i-num_points+1)*update_time for i in range(num_points)]
@@ -137,9 +137,9 @@ def Monitor_power(values):
 	line = plt.plot(x, y)[0]
 	#Update plot
 	start_time = time.time()
-	animation = FuncAnimation(fig, update_power_monitor, fargs=(PM_inst,x,y,fig,line,start_time), interval=1)
+	animation = FuncAnimation(fig, update_power_monitor, fargs=(Lock_in_inst,x,y,fig,line,start_time), interval=1)
 	plt.show()
-	spectrum_analyzer_inst.GPIB.control_ren(0)
+	Lock_in_inst.GPIB.control_ren(0)
 
 def update_power_monitor(frame,PM_inst,x,y,fig,line,start_time):
 	#read power
