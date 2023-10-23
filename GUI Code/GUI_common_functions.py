@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 9, 2023                                                     #
+# Date: Oct 23, 2023                                                     #
 #########################################################################
 
 import PySimpleGUI as psg
@@ -363,23 +363,40 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 		ax2.legend(['Right facet', 'Left facet'])
 	return [fig, threshold_current, post_thresh_slope, good_fit]
 
-def find_FW(x,y,width_y):
+def find_FW(x,y,width_y,middle_out=False):
 	y = [i for i in y] #convert to list in case of numpy array
 	y_max_index = y.index(max(y))
-	i = len(y)-1
-	for i in range(y_max_index,len(y)):
-		if y[i]<=width_y:
-			FW_end = x[i-1]
-			break
-	if i == len(y)-1:
-		FW_end = x[-1]
-	i = 0
-	for i in range(y_max_index-1,-1,-1):
-		if y[i]<=width_y:
-			FW_start = x[i+1]
-			break
-	if i == 0:
-		FW_start = x[0]
+	if middle_out:
+		i = len(y)-1
+		for i in range(y_max_index+1,len(y)):
+			if y[i]<=width_y:
+				FW_end = x[i-1]
+				break
+		if i == len(y)-1:
+			FW_end = x[-1]
+		i = 0
+		for i in range(y_max_index-1,-1,-1):
+			if y[i]<=width_y:
+				FW_start = x[i+1]
+				break
+		if i == 0:
+			FW_start = x[0]
+	else:
+		i = len(y)-1
+		print(len(y)-1,-1,y_max_index)
+		for i in range(len(y)-1,y_max_index,-1):
+			if y[i]>=width_y:
+				FW_end = x[i]
+				break
+		if i == len(y)-1:
+			FW_end = x[-1]
+		i = 0
+		for i in range(y_max_index):
+			if y[i]>=width_y:
+				FW_start = x[i]
+				break
+		if i == 0:
+			FW_start = x[0]
 	FWHM = FW_end-FW_start
 	return [FWHM,FW_start,FW_end]
 

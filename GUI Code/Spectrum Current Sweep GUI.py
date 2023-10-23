@@ -3,7 +3,7 @@
 # equipment                                                             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 10, 2023                                                    #
+# Date: Oct 23, 2023                                                    #
 #########################################################################
 
 import numpy as np
@@ -230,11 +230,11 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_stop_1 = float(values['stop_1'])
 	pulsed_1 = values['pulsed_1']
 	if pulsed_1:
-		waveform_1 == 'pulsed'
+		waveform_1 = 'pulsed'
 	else:
-		waveform_1 == 'DC'
-	pulse_width_1 = int(values['pulsed_width_1'])*1e-6
-	pulse_delay_1 = int(values['pulsed_delay_1'])*1e-6
+		waveform_1 = 'DC'
+	pulse_width_1 = int(values['pulse_width_1'])*1e-6
+	pulse_delay_1 = int(values['pulse_delay_1'])*1e-6
 	#Source 2
 	Source_2 = values['source_2']
 	Source_2_channel = values['source_2_channel']
@@ -250,11 +250,11 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_stop_2 = float(values['stop_2'])
 	pulsed_2 = values['pulsed_2']
 	if pulsed_2:
-		waveform_2 == 'pulsed'
+		waveform_2 = 'pulsed'
 	else:
-		waveform_2 == 'DC'
-	pulse_width_2 = int(values['pulsed_width_2'])*1e-6
-	pulse_delay_2 = int(values['pulsed_delay_2'])*1e-6
+		waveform_2 = 'DC'
+	pulse_width_2 = int(values['pulse_width_2'])*1e-6
+	pulse_delay_2 = int(values['pulse_delay_2'])*1e-6
 	#Source 3
 	Source_3 = values['source_3']
 	Source_3_channel = values['source_3_channel']
@@ -270,11 +270,11 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_stop_3 = float(values['stop_3'])
 	pulsed_3 = values['pulsed_3']
 	if pulsed_3:
-		waveform_3 == 'pulsed'
+		waveform_3 = 'pulsed'
 	else:
-		waveform_3 == 'DC'
-	pulse_width_3 = int(values['pulsed_width_3'])*1e-6
-	pulse_delay_3 = int(values['pulsed_delay_3'])*1e-6
+		waveform_3 = 'DC'
+	pulse_width_3 = int(values['pulse_width_3'])*1e-6
+	pulse_delay_3 = int(values['pulse_delay_3'])*1e-6
 	#Source 4
 	Source_4 = values['source_4']
 	Source_4_channel = values['source_4_channel']
@@ -290,11 +290,11 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_stop_4 = float(values['stop_4'])
 	pulsed_4 = values['pulsed_4']
 	if pulsed_4:
-		waveform_4 == 'pulsed'
+		waveform_4 = 'pulsed'
 	else:
-		waveform_4 == 'DC'
-	pulse_width_4 = int(values['pulsed_width_4'])*1e-6
-	pulse_delay_4 = int(values['pulsed_delay_4'])*1e-6
+		waveform_4 = 'DC'
+	pulse_width_4 = int(values['pulse_width_4'])*1e-6
+	pulse_delay_4 = int(values['pulse_delay_4'])*1e-6
 	#Source 5
 	Source_5 = values['source_5']
 	Source_5_channel = values['source_5_channel']
@@ -310,11 +310,11 @@ def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
 	Source_stop_5 = float(values['stop_5'])
 	pulsed_5 = values['pulsed_5']
 	if pulsed_5:
-		waveform_5 == 'pulsed'
+		waveform_5 = 'pulsed'
 	else:
-		waveform_5 == 'DC'
-	pulse_width_5 = int(values['pulsed_width_5'])*1e-6
-	pulse_delay_5 = int(values['pulsed_delay_5'])*1e-6
+		waveform_5 = 'DC'
+	pulse_width_5 = int(values['pulse_width_5'])*1e-6
+	pulse_delay_5 = int(values['pulse_delay_5'])*1e-6
 	### Initialize other parameters
 	characterization_directory = os.path.join('..','Data',user_name)
 	### Connect to Lab Equipment
