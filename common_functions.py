@@ -419,7 +419,7 @@ def plot_FP_Loss(device_name, power, wavelength, L=1e-3, neff=3.14, peak_width=1
 	FSR = sum(FSRs)/len(FSRs)
 	r = sum(ratios)/len(ratios)
 	R = ((neff-1)/(neff+1))**2
-	loss = -1/L*math.log((math.sqrt(r)-1)/(math.sqrt(r)+1)/R)
+	loss = -1/2/L*math.log((math.sqrt(r)-1)/(math.sqrt(r)+1)/R)
 	print(loss)
 	#Format figure
 	fig, ax = plt.subplots()
