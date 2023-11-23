@@ -6,7 +6,7 @@
 # device_source5value_source4value_source3value_source2value.txt        #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 10, 2023                                                    #
+# Date: Nov 22, 2023                                                    #
 #########################################################################
 
 import numpy as np
@@ -484,6 +484,8 @@ def LIV(window,values):
 							time.sleep(0.2)
 							voltage_list[i] = Source_inst_1.read_value('Voltage')
 							power_list[i] = PM_inst.read_power()
+							if power_list[i] == '-NULL-':
+								return
 							if two_facet_LIV:
 								PM_inst.set_channel(Power_meter_channel_2)
 								time.sleep(0.1)

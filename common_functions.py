@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Nov 16, 2023                                                    #
+# Date: Nov 22, 2023                                                    #
 #########################################################################
 
 import pyvisa
@@ -395,6 +395,40 @@ def plot_spectrum(device_name, x_data, power, show_max=False, show_max_numbers=T
 	ax.set_ylabel('Power [dBm]')
 	plt.tight_layout()
 	return [fig, max_x, max_power, SMSR, FWHM]
+
+def plot_FP_Loss(device_name, power, wavelength, L=1e-3, neff=3.14, peak_width=15):
+	power = [i/max(power) for i in power] #[W to A.U.]
+	#Curve fit to estimate loss - TODO
+	peaks = []
+	troughs = []
+	peak_power = []
+	trough_power = []
+	peak_distance = int((peak_width-1)/2)
+	for i in np.arange(1+peak_distance,len(power)-peak_distance,1):
+		if power[i] == max(power[i-peak_distance:i+peak_distance]):
+			peaks.append(i)
+			peak_power.append(power[i])
+		elif power[i] == min(power[i-peak_distance:i+peak_distance]):
+			troughs.append(i)
+			trough_power.append(power[i])
+	FSRs = []
+	ratios = []
+	for i in range(min(len(peaks),len(troughs))):
+		FSRs.append(abs(wavelength[peaks[i]]-wavelength[troughs[i]]))
+		ratios.append(power[peaks[i]]/power[troughs[i]])
+	FSR = sum(FSRs)/len(FSRs)
+	r = sum(ratios)/len(ratios)
+	R = ((neff-1)/(neff+1))**2
+	loss = -1/L*math.log((math.sqrt(r)-1)/(math.sqrt(r)+1)/R)
+	print(loss)
+	#Format figure
+	fig, ax = plt.subplots()
+	plt.title(str(device_name))
+	ax.set_ylabel('Power [A.U.]')
+	ax.set_xlabel('Wavelength [nm]\nLoss = {:.2f}'.format(loss/100)+r' $cm^{-1}$')
+	ax.plot(wavelength, power)
+	plt.tight_layout()
+	return [fig, loss]
 
 def SechSqr(x, offset, amplitude, center, width, suppress_overflow=True):
 	if suppress_overflow:

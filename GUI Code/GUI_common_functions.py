@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Nov 16, 2023                                                    #
+# Date: Nov 22, 2023                                                    #
 #########################################################################
 
 import PySimpleGUI as psg
@@ -99,6 +99,14 @@ def connect_to_GPIB(device_name,parameters=[]):
 		if not rm:
 			return False
 		device_inst = SWS15101_Interface.SWS15101(rm, GPIB_address)
+		device_type = 'Laser'
+	elif device_name == 'TSL550':
+		from GUI_Interfaces import TSL550_Interface
+		GPIB_address = 'GPIB0::12::INSTR'
+		rm = check_GPIB_connection(device_name, GPIB_address)
+		if not rm:
+			return False
+		device_inst = TSL550_Interface.TSL550(rm, GPIB_address)
 		device_type = 'Laser'
 	elif device_name == 'K2604B':
 		num_params = 7 #Source_mode,Source_channel,protection_voltage,protection_current,waveform,pulse_delay,pulse_width
@@ -362,6 +370,40 @@ def plot_LIV(device_name, power, current, voltage, show_best_fit=True, show_best
 	if power2:
 		ax2.legend(['Right facet', 'Left facet'])
 	return [fig, threshold_current, post_thresh_slope, good_fit]
+
+def plot_FP_Loss(device_name, power, wavelength, L=1e-3, neff=3.14, peak_width=15):
+	power = [i/max(power) for i in power] #[W to A.U.]
+	#Curve fit to estimate loss - TODO
+	peaks = []
+	troughs = []
+	peak_power = []
+	trough_power = []
+	peak_distance = int((peak_width-1)/2)
+	for i in np.arange(1+peak_distance,len(power)-peak_distance,1):
+		if power[i] == max(power[i-peak_distance:i+peak_distance]):
+			peaks.append(i)
+			peak_power.append(power[i])
+		elif power[i] == min(power[i-peak_distance:i+peak_distance]):
+			troughs.append(i)
+			trough_power.append(power[i])
+	FSRs = []
+	ratios = []
+	for i in range(min(len(peaks),len(troughs))):
+		FSRs.append(abs(wavelength[peaks[i]]-wavelength[troughs[i]]))
+		ratios.append(power[peaks[i]]/power[troughs[i]])
+	FSR = sum(FSRs)/len(FSRs)
+	r = sum(ratios)/len(ratios)
+	R = ((neff-1)/(neff+1))**2
+	loss = -1/L*math.log((math.sqrt(r)-1)/(math.sqrt(r)+1)/R)
+	print(loss)
+	#Format figure
+	fig, ax = plt.subplots()
+	plt.title(str(device_name))
+	ax.set_ylabel('Power [A.U.]')
+	ax.set_xlabel('Wavelength [nm]\nLoss = {:.2f}'.format(loss/100)+r' $cm^{-1}$')
+	ax.plot(wavelength, power)
+	plt.tight_layout()
+	return [fig, loss]
 
 def find_FW(x,y,width_y,middle_out=False):
 	y = [i for i in y] #convert to list in case of numpy array

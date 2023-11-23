@@ -88,7 +88,7 @@ class Newport_PM:
 		return power
 		
 	def set_wavelength(self, wavelength):
-		wavelength = int(wavelength)
+		wavelength = int(wavelength) #[nm]
 		if wavelength >= int(self.query('PM:MIN:Lambda?')) and wavelength <= int(self.query('PM:MAX:Lambda?')):
 			self.write('PM:Lambda '+str(wavelength))
 		else:
