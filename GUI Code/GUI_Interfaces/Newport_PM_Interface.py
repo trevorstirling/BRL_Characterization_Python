@@ -1,19 +1,19 @@
 #########################################################################
-# Functions to interface with Newport power meter (one or two channel)	#
-# Functions:															#
-# -set_channel()														#
-# -read_power()															#
-# -set_wavelength()														#
-# -read_wavelength()													#
-# -set_filtering()														#
-# -set_analogfilter()													#
-# -set_digitalfilter()													#
-# -set_range()															#
-# -set_autorange()														#
-# -read_range()															#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with Newport power meter (one or two channel)  #
+# Functions:                                                            #
+# -set_channel()                                                        #
+# -read_power()                                                         #
+# -set_wavelength()                                                     #
+# -read_wavelength()                                                    #
+# -set_filtering()                                                      #
+# -set_analogfilter()                                                   #
+# -set_digitalfilter()                                                  #
+# -set_range()                                                          #
+# -set_autorange()                                                      #
+# -read_range()                                                         #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Dec 5, 2023                                                     #
 #########################################################################
 
 import os
@@ -70,7 +70,7 @@ class Newport_PM:
 	
 	def read_power(self):
 		power = self.query('PM:P?')
-		if power == '':
+		if power == '' or power[:7] == 'NEWPORT':
 			psg.popup("Newport Power Meter is not responding - restart power meter and try again")
 		power = float(power)
 		if power<-3e+38:

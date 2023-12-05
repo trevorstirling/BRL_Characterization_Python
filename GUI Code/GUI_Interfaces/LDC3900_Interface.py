@@ -25,7 +25,7 @@
 #        consider implementing a check for error if no device connected #
 #																		#
 # Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Date: Nov 28, 2023													#
 #########################################################################
 
 import time
@@ -54,7 +54,7 @@ class LDC3900:
 		self.set_voltage_protection(4) #[V]
 
 	def set_channel(self,channel_num='N/A'):
-		if channel_num = 'N/A':
+		if channel_num == 'N/A':
 			self.GPIB.write('CHAN '+str(self.channel)) #debug: could be LAS:CHAN
 		else:
 			self.GPIB.write('CHAN '+str(channel_num)) #debug: could be LAS:CHAN

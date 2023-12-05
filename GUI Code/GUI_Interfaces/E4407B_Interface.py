@@ -8,7 +8,7 @@
 # -sweep()                                                              #
 # -set_ref_level()                                                      #
 # -set_y_scale()                                                        #
-# -set_wavelength()                                                     #
+# -set_frequency()                                                     #
 # -set_span()                                                           #
 # -set_rbw()                                                            #
 # -peak_to_center()                                                     #
@@ -19,7 +19,7 @@
 # -set_vbw()                                                            #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 6, 2023                                                     #
+# Date: Dec 5, 2023                                                     #
 #########################################################################
 
 import numpy as np
@@ -57,7 +57,7 @@ class E4407B:
 		start = self.GPIB.query_ascii_values(':FREQ:STAR?')[0]
 		span = self.GPIB.query_ascii_values(':FREQ:SPAN?')[0]
 		step = span/(len(power)-1)
-		frequency = np.arange(start, start+span+step, step)
+		frequency = np.arange(start, start+span+step/2, step)
 		frequency = [x/1e9 for x in frequency]
 		if print_status:
 			print(" Capture complete")
