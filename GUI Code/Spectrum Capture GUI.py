@@ -2,7 +2,7 @@
 # Script to capture spectrum using various spectrum analyzers           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 10, 2023                                                    #
+# Date: Dec 8, 2023                                                     #
 #########################################################################
 
 import sys, os
@@ -25,7 +25,7 @@ def GUI(debug=False):
 		print_window = []
 	else:
 		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
-	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(5,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
+	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(6,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
 	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
