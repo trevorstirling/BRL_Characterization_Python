@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Nov 22, 2023                                                    #
+# Date: Jan 15, 2023                                                    #
 #########################################################################
 
 import pyvisa
@@ -321,7 +321,7 @@ def find_FW(x,y,width_y,middle_out=False):
 		if i == y_max_index+1:
 			FW_end = x[-1]
 		i = 0
-		for i in range(y_max_index-1,-1,-1):
+		for i in range(y_max_index):
 			if y[i]>=width_y:
 				FW_start = x[i]
 				break
