@@ -416,7 +416,6 @@ def find_FW(x,y,width_y,middle_out=False):
 				break
 		if i == len(y)-1:
 			FW_end = x[-1]
-		i = 0
 		for i in range(y_max_index-1,-1,-1):
 			if y[i]<=width_y:
 				FW_start = x[i+1]
@@ -430,14 +429,13 @@ def find_FW(x,y,width_y,middle_out=False):
 				FW_end = x[i]
 				break
 		if i == y_max_index+1:
-			FW_end = x[-1]
-		i = 0
+			FW_end = x[y_max_index]
 		for i in range(y_max_index):
 			if y[i]>=width_y:
 				FW_start = x[i]
 				break
-		if i == 0:
-			FW_start = x[0]
+		if i == y_max_index-1:
+			FW_start = x[y_max_index]
 	FWHM = FW_end-FW_start
 	return [FWHM,FW_start,FW_end]
 
