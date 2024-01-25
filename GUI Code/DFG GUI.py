@@ -36,7 +36,7 @@ def GUI(debug=False):
 	[psg.Text('Spectrum Analyzer:'),psg.Combo(['AQ6317B', 'AQ6374'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
 	[psg.Text('Pump Wavelength:'),psg.InputText('786', key='pump_wavlength', size=(5,1), enable_events=True),psg.Text('[nm]'),psg.Text('Sensitivity:'),psg.Combo(['MID', 'HIGH1', 'HIGH2', 'HIGH3'], default_value='HIGH1', size=(6,1), readonly=True, key='sensitivity')],
 	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False)],
-	[psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Sweep DFG'), BluePSGButton('Exit')], #push adds flexible whitespace
+	[psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=False), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Sweep DFG'), BluePSGButton('Exit')], #push adds flexible whitespace
 	print_window]
 	#Create window
 	window = psg.Window('DFG',layout, resizable=True)

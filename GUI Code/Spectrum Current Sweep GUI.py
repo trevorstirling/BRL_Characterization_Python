@@ -43,7 +43,7 @@ def GUI(debug=False):
 	[psg.pin(psg.Column(current_source_layout(4),key='source_4_options',visible=False))],
 	[psg.Push(),psg.pin(psg.Column(current_source_title(5),key='source_5_title',visible=False)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(5),key='source_5_options',visible=False))],
-	[BluePSGButton('Ω Check'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture Sweep'), BluePSGButton('Exit')], #push adds flexible whitespace
+	[BluePSGButton('Ω Check'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=False), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture Sweep'), BluePSGButton('Exit')], #push adds flexible whitespace
 	print_window]
 	#Create window
 	window = psg.Window('Spectrum Current Sweep',layout, resizable=True)
