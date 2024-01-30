@@ -589,6 +589,7 @@ def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=
 		#Format figure
 		fig, ax1 = plt.subplots()
 		plt.plot(time,intensity,color='0.8')
+		plt.plot(time,intensity_low,color='0.6')
 		if x_axis_calibrated:
 			x_axis_text = 'Time [fs]'
 		else:
