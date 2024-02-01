@@ -1,19 +1,19 @@
 #########################################################################
-# Functions to interface with SWS15101 tunable laser source 			#
-# Laser source common functions:										#
-# -set_power()															#
-# -set_wavelength()														#
-# -read_value()															#
-# -set_output()															#
-#																		#
-# SWS15101 specific functions:											#
-# -wait_for_OPC()														#
-#																		#
-# Note: Need to wait for "Operation Complete" from instrument			#
-#       Don't query, use a write, wait, read instead					#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with SWS15101 tunable laser source             #
+# Laser source common functions:                                        #
+# -set_power()                                                          #
+# -set_wavelength()                                                     #
+# -read_value()                                                         #
+# -set_output()                                                         #
+#                                                                       #
+# SWS15101 specific functions:                                          #
+# -wait_for_OPC()                                                       #
+#                                                                       #
+# Note: Need to wait for "Operation Complete" from instrument           #
+#       Don't query, use a write, wait, read instead                    #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import PySimpleGUI as psg

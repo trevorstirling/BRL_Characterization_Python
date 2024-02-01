@@ -8,7 +8,7 @@
 # -sweep()                                                              #
 # -set_ref_level()                                                      #
 # -set_y_scale()                                                        #
-# -set_frequency()                                                     #
+# -set_frequency()                                                      #
 # -set_span()                                                           #
 # -set_rbw()                                                            #
 # -peak_to_center()                                                     #

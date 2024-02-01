@@ -1,31 +1,31 @@
 #########################################################################
-# Functions to interface with LDC3908 and LDC3916 current sources 		#
-# (DFB Controller)														#
-# Current source common functions:										#
-# -is_on()																#
-# -get_mode()															#
-# -safe_turn_off()														#
-# -safe_turn_on()														#
-# -set_voltage_protection()												#
-# -set_current_protection()												#
-# -set_waveform()														#
-# -set_value()															#
-# -set_trigger_count()													#
-# -initiate_trigger()													#
-# -abort_trigger()														#
-# -read_value()															#
-# -read_setting()														#
-# -set_output()															#
-# -set_mode()															#
-#																		#
-# LDC3900 specific functions:											#
-# -set_channel()														#
-#																		#
-# Notes: consider implementing wait_for_OPC rather than time.sleep(5)	#
+# Functions to interface with LDC3908 and LDC3916 current sources       #
+# (DFB Controller)                                                      #
+# Current source common functions:                                      #
+# -is_on()                                                              #
+# -get_mode()                                                           #
+# -safe_turn_off()                                                      #
+# -safe_turn_on()                                                       #
+# -set_voltage_protection()                                             #
+# -set_current_protection()                                             #
+# -set_waveform()                                                       #
+# -set_value()                                                          #
+# -set_trigger_count()                                                  #
+# -initiate_trigger()                                                   #
+# -abort_trigger()                                                      #
+# -read_value()                                                         #
+# -read_setting()                                                       #
+# -set_output()                                                         #
+# -set_mode()                                                           #
+#                                                                       #
+# LDC3900 specific functions:                                           #
+# -set_channel()                                                        #
+#                                                                       #
+# Notes: consider implementing wait_for_OPC rather than time.sleep(5)   #
 #        consider implementing a check for error if no device connected #
-#																		#
-# Author: Trevor Stirling												#
-# Date: Nov 28, 2023													#
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Jan 31, 2024                                                    #
 #########################################################################
 
 import time
@@ -85,7 +85,9 @@ class LDC3900:
 	
 	def safe_turn_on(self, value):
 		self.set_channel()
-		step_size = .01*value/abs(value)
+		step_size = .01
+		if value<0:
+			step_size = -1*step_size
 		if abs(value)>abs(step_size):
 			self.set_value(step_size)
 			self.set_output('ON')

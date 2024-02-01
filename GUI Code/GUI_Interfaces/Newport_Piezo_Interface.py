@@ -1,22 +1,22 @@
 #########################################################################
-# Functions to interface with Newport piezo stage						#
-# Functions:															#
-# -set_channel()														#
-# -read_channel()														#
-# -wait_for_complete()													#
-# -reset()																#
-# -move_relative()														#
-# -move_to_limit()														#
-# -start_jog()															#
-# -stop_motion()														#
-# -disconnect()															#
-# -zero_position()														#
-# -get_position()														#
-# -set_step_amplitude()													#
-# -disconnect()															#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with Newport piezo stage                       #
+# Functions:                                                            #
+# -set_channel()                                                        #
+# -read_channel()                                                       #
+# -wait_for_complete()                                                  #
+# -reset()                                                              #
+# -move_relative()                                                      #
+# -move_to_limit()                                                      #
+# -start_jog()                                                          #
+# -stop_motion()                                                        #
+# -disconnect()                                                         #
+# -zero_position()                                                      #
+# -get_position()                                                       #
+# -set_step_amplitude()                                                 #
+# -disconnect()                                                         #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import sys

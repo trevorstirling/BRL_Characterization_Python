@@ -1,18 +1,18 @@
 #########################################################################
-# Functions to interface with SR830 Amplifier							#
-# Functions:															#
-# -set_time_constant()													#
-# -set_sensitivity()													#
-# -read_value()															#
-# -read_power()															#
-# -read_buffer_size()													#
-# -empty_buffer()														#
-# -start_buffer_collection()											#
-# -read_from_buffer()													#
-# -set_sampling_rate()													#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with SR830 Amplifier                           #
+# Functions:                                                            #
+# -set_time_constant()                                                  #
+# -set_sensitivity()                                                    #
+# -read_value()                                                         #
+# -read_power()                                                         #
+# -read_buffer_size()                                                   #
+# -empty_buffer()                                                       #
+# -start_buffer_collection()                                            #
+# -read_from_buffer()                                                   #
+# -set_sampling_rate()                                                  #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Sept 29, 2023                                                   #
 #########################################################################
 
 import time

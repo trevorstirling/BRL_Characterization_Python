@@ -81,9 +81,11 @@ class B2902A:
 	
 	def safe_turn_on(self, value):
 		if self.mode == 'Current':
-			step_size = .01*value/abs(value)
+			step_size = .01
 		elif self.mode == 'Voltage':
-			step_size = .1*value/abs(value)
+			step_size = .1
+		if value<0:
+			step_size = -1*step_size
 		if abs(value)>abs(step_size):
 			self.set_value(step_size)
 			self.set_output('ON')

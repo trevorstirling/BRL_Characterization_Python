@@ -1,24 +1,24 @@
 #########################################################################
-# Functions to interface with K2604B current source						#
-# Current source common functions:										#
-# -is_on()																#
-# -get_mode()															#
-# -safe_turn_off()														#
-# -safe_turn_on()														#
-# -set_value()															#
-# -set_voltage_protection()												#
-# -set_current_protection()												#
-# -set_waveform()														#
-# -set_trigger_count()													#
-# -initiate_trigger()													#
-# -abort_trigger()														#
-# -read_value()															#
-# -read_setting()														#
-# -set_output()															#
-# -set_mode()															#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with K2604B current source                     #
+# Current source common functions:                                      #
+# -is_on()                                                              #
+# -get_mode()                                                           #
+# -safe_turn_off()                                                      #
+# -safe_turn_on()                                                       #
+# -set_value()                                                          #
+# -set_voltage_protection()                                             #
+# -set_current_protection()                                             #
+# -set_waveform()                                                       #
+# -set_trigger_count()                                                  #
+# -initiate_trigger()                                                   #
+# -abort_trigger()                                                      #
+# -read_value()                                                         #
+# -read_setting()                                                       #
+# -set_output()                                                         #
+# -set_mode()                                                           #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Jan 31, 2024                                                    #
 #########################################################################
 
 import time
@@ -79,9 +79,11 @@ class K2604B:
 	
 	def safe_turn_on(self, value):
 		if self.mode == 'Current':
-			step_size = .01*value/abs(value)
+			step_size = .01
 		elif self.mode == 'Voltage':
-			step_size = .1*value/abs(value)
+			step_size = .1
+		if value<0:
+			step_size = -1*step_size
 		if abs(value)>abs(step_size):
 			self.set_value(step_size)
 			self.set_output('ON')

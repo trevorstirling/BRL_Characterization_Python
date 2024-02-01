@@ -1,29 +1,29 @@
 #########################################################################
-# Functions to interface with K2520 current source 						#
-# Current source common functions:										#
-# -is_on()																#
-# -get_mode()															#
-# -safe_turn_off()														#
-# -safe_turn_on()														#
-# -set_voltage_protection()												#
-# -set_current_protection()												#
-# -set_waveform()														#
-# -set_trigger_count()													#
-# -initiate_trigger()													#
-# -abort_trigger()														#
-# -set_value()															#
-# -read_value()															#
-# -read_power()															#
-# -read_setting()														#
-# -set_output()															#
-# -set_mode()															#
-#																		#
-# K2520 specific functions:												#
-# -sweep_current()														#
-# -enable_init_continuous()												#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with K2520 current source                      #
+# Current source common functions:                                      #
+# -is_on()                                                              #
+# -get_mode()                                                           #
+# -safe_turn_off()                                                      #
+# -safe_turn_on()                                                       #
+# -set_voltage_protection()                                             #
+# -set_current_protection()                                             #
+# -set_waveform()                                                       #
+# -set_trigger_count()                                                  #
+# -initiate_trigger()                                                   #
+# -abort_trigger()                                                      #
+# -set_value()                                                          #
+# -read_value()                                                         #
+# -read_power()                                                         #
+# -read_setting()                                                       #
+# -set_output()                                                         #
+# -set_mode()                                                           #
+#                                                                       #
+# K2520 specific functions:                                             #
+# -sweep_current()                                                      #
+# -enable_init_continuous()                                             #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Jan 31, 2024                                                    #
 #########################################################################
 
 import time
@@ -84,7 +84,9 @@ class K2520:
 			self.set_output('OFF')
 	
 	def safe_turn_on(self, value):
-		step_size = .01*value/abs(value)
+		step_size = .01
+		if value<0:
+			step_size = -1*step_size
 		if abs(value)>abs(step_size):
 			self.set_value(step_size)
 			self.set_output('ON')
