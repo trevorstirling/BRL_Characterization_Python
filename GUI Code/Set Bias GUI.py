@@ -48,7 +48,7 @@ def GUI(debug=False):
 	[BluePSGButton('Ω Check'), psg.Push(), BluePSGButton('Set Bias'), BluePSGButton('Exit')], #push adds flexible whitespace
 	print_window]
 	#Create window
-	window = psg.Window('LIV',layout, resizable=True)
+	window = psg.Window('Set Bias',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
 	window['source_1'].update(value=default_source)
 	update_channel(window,default_source,'1')
@@ -262,7 +262,7 @@ def Set_Bias(window,values):
 	### Set bias
 	if Source_1.lower() != 'off':
 		if Source_inst_1.is_on():
-			Source_value = Source_inst_1.read_value(Source_1_mode)
+			Source_value = Source_inst_1.read_setting()
 			if Source_1_mode == 'Current':
 				step = 10e-3
 			else:
@@ -281,7 +281,7 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_2.lower() != 'off':
 		if Source_inst_2.is_on():
-			Source_value = Source_inst_2.read_value(Source_2_mode)
+			Source_value = Source_inst_2.read_setting()
 			if Source_2_mode == 'Current':
 				step = 10e-3
 			else:
@@ -300,7 +300,7 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_3.lower() != 'off':
 		if Source_inst_3.is_on():
-			Source_value = Source_inst_3.read_value(Source_3_mode)
+			Source_value = Source_inst_3.read_setting()
 			if Source_3_mode == 'Current':
 				step = 10e-3
 			else:
@@ -319,7 +319,7 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_4.lower() != 'off':
 		if Source_inst_4.is_on():
-			Source_value = Source_inst_4.read_value(Source_4_mode)
+			Source_value = Source_inst_4.read_setting()
 			if Source_4_mode == 'Current':
 				step = 10e-3
 			else:
@@ -338,7 +338,7 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_5.lower() != 'off':
 		if Source_inst_5.is_on():
-			Source_value = Source_inst_5.read_value(Source_5_mode)
+			Source_value = Source_inst_5.read_setting()
 			if Source_5_mode == 'Current':
 				step = 10e-3
 			else:

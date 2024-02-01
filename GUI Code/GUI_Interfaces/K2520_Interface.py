@@ -23,7 +23,7 @@
 # -enable_init_continuous()                                             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Jan 31, 2024                                                    #
+# Date: Feb 1, 2024                                                     #
 #########################################################################
 
 import time
@@ -37,11 +37,7 @@ class K2520:
 		self.responsivity = 1/1.74 #measured photodiode responsivity [A/W]
 		if self.mode != 'Current':
 			psg.popup("The K2520 mode must be Current")
-		self.safe_turn_off()
-		self.GPIB.write('*RST')
 		#Set Mode
-		self.set_waveform('PULSED', 20e-6, 1e-6) #set up pulsed mode
-		self.set_waveform('DC') #actually use DC mode
 		self.set_voltage_protection(4) #[V]
 		self.GPIB.write(':SOUR1:CURR:LOW 0')
 		self.GPIB.write(':SOUR1:CURR:RANG 0.5') #0.5 or 5 A

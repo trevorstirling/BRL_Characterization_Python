@@ -1,24 +1,24 @@
 #########################################################################
-# Functions to interface with B2902A current source						#
-# Current source common functions:										#
-# -is_on()																#
-# -get_mode()															#
-# -safe_turn_off()														#
-# -safe_turn_on()														#
-# -set_voltage_protection()												#
-# -set_current_protection()												#
-# -set_waveform()														#
-# -set_value()															#
-# -set_trigger_count()													#
-# -initiate_trigger()													#
-# -abort_trigger()														#
-# -read_value()															#
-# -read_setting()														#
-# -set_output()															#
-# -set_mode()															#
-#																		#
-# Author: Trevor Stirling												#
-# Date: Sept 29, 2023													#
+# Functions to interface with B2902A current source                     #
+# Current source common functions:                                      #
+# -is_on()                                                              #
+# -get_mode()                                                           #
+# -safe_turn_off()                                                      #
+# -safe_turn_on()                                                       #
+# -set_voltage_protection()                                             #
+# -set_current_protection()                                             #
+# -set_waveform()                                                       #
+# -set_value()                                                          #
+# -set_trigger_count()                                                  #
+# -initiate_trigger()                                                   #
+# -abort_trigger()                                                      #
+# -read_value()                                                         #
+# -read_setting()                                                       #
+# -set_output()                                                         #
+# -set_mode()                                                           #
+#                                                                       #
+# Author: Trevor Stirling                                               #
+# Date: Feb 1, 2024                                                     #
 #########################################################################
 
 import time
@@ -38,11 +38,10 @@ class B2902A:
 			self.channel = '2'
 		else:
 			psg.popup("The B2902A channel must be 1 or 2")
-		self.safe_turn_off()
 		#Set Mode
-		self.set_mode()
-		self.set_waveform('PULSED', 20e-6, 1e-6) #set up pulsed mode
-		self.set_waveform('DC') #actually use DC mode
+		if self.get_mode() != self.mode:
+			self.safe_turn_off()
+			self.set_mode()
 		if self.mode == 'Current':
 			self.set_voltage_protection(4) #[V]
 			self.GPIB.write(':SOUR:CURR:RANG:AUTO ON')

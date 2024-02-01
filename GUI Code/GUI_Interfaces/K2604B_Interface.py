@@ -18,7 +18,7 @@
 # -set_mode()                                                           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Jan 31, 2024                                                    #
+# Date: Feb 1, 2024                                                     #
 #########################################################################
 
 import time
@@ -38,9 +38,10 @@ class K2604B:
 			self.channel = 'smub'
 		else:
 			psg.popup("The K2604B channel must be A or B")
-		self.safe_turn_off()
 		#Set Mode
-		self.set_mode()
+		if self.get_mode() != self.mode:
+			self.safe_turn_off()
+			self.set_mode()
 		if self.mode == 'Current':
 			self.set_voltage_protection(4) #[V]
 			self.GPIB.write(self.channel+'.source.autorangei = '+self.channel+'.AUTORANGE_ON')

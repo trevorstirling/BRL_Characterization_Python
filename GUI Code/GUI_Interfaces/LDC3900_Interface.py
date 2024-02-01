@@ -25,7 +25,7 @@
 #        consider implementing a check for error if no device connected #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Jan 31, 2024                                                    #
+# Date: Feb 1, 2024                                                     #
 #########################################################################
 
 import time
@@ -50,7 +50,6 @@ class LDC3900:
 			self.set_channel()
 		else:
 			psg.popup("The "+self.name+" channel must an integer 1 to "+str(num_channels))
-		self.safe_turn_off()
 		self.set_voltage_protection(4) #[V]
 
 	def set_channel(self,channel_num='N/A'):
