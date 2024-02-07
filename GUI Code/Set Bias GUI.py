@@ -3,7 +3,7 @@
 # using up to five current/voltage sources (various models)             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Jan 31, 2024                                                    #
+# Date: Feb 7, 2024                                                     #
 #########################################################################
 
 import numpy as np
@@ -262,17 +262,21 @@ def Set_Bias(window,values):
 	### Set bias
 	if Source_1.lower() != 'off':
 		if Source_inst_1.is_on():
-			Source_value = Source_inst_1.read_setting()
-			if Source_1_mode == 'Current':
-				step = 10e-3
+			if Source_bias_1 == 0:
+				Source_inst_1.safe_turn_off()
 			else:
-				step = 0.1
-			if Source_bias_1<Source_value:
-				step = -1*step
-			for bias in np.arange(Source_value,Source_bias_1,step):
-				Source_inst_1.set_value(bias)
-			Source_inst_1.set_value(Source_bias_1)
-		else:
+				Source_value = Source_inst_1.read_setting()
+				if Source_1_mode == 'Current':
+					step = 10e-3
+				else:
+					step = 0.1
+				if Source_bias_1<Source_value:
+					step = -1*step
+				for bias in np.arange(Source_value,Source_bias_1,step):
+					Source_inst_1.set_value(bias)
+					time.sleep(0.1)
+				Source_inst_1.set_value(Source_bias_1)
+		elif Source_bias_1 != 0:
 			Source_inst_1.safe_turn_on(Source_bias_1)
 		if Source_1_mode == 'Current':
 			print(" Source #1 = "+str(round(Source_bias_1*1e3))+" mA")
@@ -281,17 +285,21 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_2.lower() != 'off':
 		if Source_inst_2.is_on():
-			Source_value = Source_inst_2.read_setting()
-			if Source_2_mode == 'Current':
-				step = 10e-3
+			if Source_bias_2 == 0:
+				Source_inst_2.safe_turn_off()
 			else:
-				step = 0.1
-			if Source_bias_2<Source_value:
-				step = -1*step
-			for bias in np.arange(Source_value,Source_bias_2,step):
-				Source_inst_2.set_value(bias)
-			Source_inst_2.set_value(Source_bias_2)
-		else:
+				Source_value = Source_inst_2.read_setting()
+				if Source_2_mode == 'Current':
+					step = 10e-3
+				else:
+					step = 0.1
+				if Source_bias_2<Source_value:
+					step = -1*step
+				for bias in np.arange(Source_value,Source_bias_2,step):
+					Source_inst_2.set_value(bias)
+					time.sleep(0.1)
+				Source_inst_2.set_value(Source_bias_2)
+		elif Source_bias_2 != 0:
 			Source_inst_2.safe_turn_on(Source_bias_2)
 		if Source_2_mode == 'Current':
 			print(" Source #2 = "+str(round(Source_bias_2*1e3))+" mA")
@@ -300,17 +308,21 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_3.lower() != 'off':
 		if Source_inst_3.is_on():
-			Source_value = Source_inst_3.read_setting()
-			if Source_3_mode == 'Current':
-				step = 10e-3
+			if Source_bias_3 == 0:
+				Source_inst_3.safe_turn_off()
 			else:
-				step = 0.1
-			if Source_bias_3<Source_value:
-				step = -1*step
-			for bias in np.arange(Source_value,Source_bias_3,step):
-				Source_inst_3.set_value(bias)
-			Source_inst_3.set_value(Source_bias_3)
-		else:
+				Source_value = Source_inst_3.read_setting()
+				if Source_3_mode == 'Current':
+					step = 10e-3
+				else:
+					step = 0.1
+				if Source_bias_3<Source_value:
+					step = -1*step
+				for bias in np.arange(Source_value,Source_bias_3,step):
+					Source_inst_3.set_value(bias)
+					time.sleep(0.1)
+				Source_inst_3.set_value(Source_bias_3)
+		elif Source_bias_3 != 0:
 			Source_inst_3.safe_turn_on(Source_bias_3)
 		if Source_3_mode == 'Current':
 			print(" Source #3 = "+str(round(Source_bias_3*1e3))+" mA")
@@ -319,17 +331,21 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_4.lower() != 'off':
 		if Source_inst_4.is_on():
-			Source_value = Source_inst_4.read_setting()
-			if Source_4_mode == 'Current':
-				step = 10e-3
+			if Source_bias_4 == 0:
+				Source_inst_4.safe_turn_off()
 			else:
-				step = 0.1
-			if Source_bias_4<Source_value:
-				step = -1*step
-			for bias in np.arange(Source_value,Source_bias_4,step):
-				Source_inst_4.set_value(bias)
-			Source_inst_4.set_value(Source_bias_4)
-		else:
+				Source_value = Source_inst_4.read_setting()
+				if Source_4_mode == 'Current':
+					step = 10e-3
+				else:
+					step = 0.1
+				if Source_bias_4<Source_value:
+					step = -1*step
+				for bias in np.arange(Source_value,Source_bias_4,step):
+					Source_inst_4.set_value(bias)
+					time.sleep(0.1)
+				Source_inst_4.set_value(Source_bias_4)
+		elif Source_bias_4 != 0:
 			Source_inst_4.safe_turn_on(Source_bias_4)
 		if Source_4_mode == 'Current':
 			print(" Source #4 = "+str(round(Source_bias_4*1e3))+" mA")
@@ -338,17 +354,21 @@ def Set_Bias(window,values):
 		window.Refresh()
 	if Source_5.lower() != 'off':
 		if Source_inst_5.is_on():
-			Source_value = Source_inst_5.read_setting()
-			if Source_5_mode == 'Current':
-				step = 10e-3
+			if Source_bias_5 == 0:
+				Source_inst_5.safe_turn_off()
 			else:
-				step = 0.1
-			if Source_bias_5<Source_value:
-				step = -1*step
-			for bias in np.arange(Source_value,Source_bias_5,step):
-				Source_inst_5.set_value(bias)
-			Source_inst_5.set_value(Source_bias_5)
-		else:
+				Source_value = Source_inst_5.read_setting()
+				if Source_5_mode == 'Current':
+					step = 10e-3
+				else:
+					step = 0.1
+				if Source_bias_5<Source_value:
+					step = -1*step
+				for bias in np.arange(Source_value,Source_bias_5,step):
+					Source_inst_5.set_value(bias)
+					time.sleep(0.1)
+				Source_inst_5.set_value(Source_bias_5)
+		elif Source_bias_5 != 0:
 			Source_inst_5.safe_turn_on(Source_bias_5)
 		if Source_5_mode == 'Current':
 			print(" Source #5 = "+str(round(Source_bias_5*1e3))+" mA")
