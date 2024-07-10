@@ -461,7 +461,7 @@ def plot_spectrum(device_name, x_data, power, show_max=False, show_max_numbers=T
 	SM_index = peak_power.index(max(peak_power))
 	SM_power = peak_power[SM_index]
 	SM_x = x_data[peaks[SM_index]]
-	SMSR = max_power-SM_power;
+	SMSR = max_power-SM_power
 	#Format figure
 	fig, ax = plt.subplots()
 	plt.title(str(device_name))

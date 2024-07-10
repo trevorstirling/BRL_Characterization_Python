@@ -45,7 +45,7 @@ def GUI(debug=False):
 	[psg.pin(psg.Column(current_source_layout(4),key='source_4_options',visible=False))],
 	[psg.Push(),psg.pin(psg.Column(current_source_title(5),key='source_5_title',visible=False)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(5),key='source_5_options',visible=False))],
-	[BluePSGButton('Ω Check'), psg.Push(), BluePSGButton('Set Bias'), BluePSGButton('Exit')], #push adds flexible whitespace
+	[BluePSGButton('Ω Check'),BluePSGButton('Zero Bias'), psg.Push(), BluePSGButton('Set Bias'), BluePSGButton('Exit')], #push adds flexible whitespace
 	print_window]
 	#Create window
 	window = psg.Window('Set Bias',layout, resizable=True)
@@ -89,6 +89,8 @@ def GUI(debug=False):
 				window['units_'+num].update(value='[V]')
 		elif event == 'Set Bias':
 			Set_Bias(window,values)
+		elif event == 'Zero Bias':
+			Set_Bias(window,values,True)
 		elif event == 'Ω Check':
 			resistance_check(window,values)
 		#data validation
@@ -143,7 +145,7 @@ def resistance_check(window,values):
 	window.Refresh()
 	Source_inst.GPIB.control_ren(0)
 
-def Set_Bias(window,values):
+def Set_Bias(window,values,turn_off_all=False):
 	### Get parameters from GUI
 	#Source 1
 	Source_1 = values['source_1']
@@ -259,6 +261,13 @@ def Set_Bias(window,values):
 		Source_bias_4 = Source_bias_4*1e-3
 	if Source_5_mode == 'Current':
 		Source_bias_5 = Source_bias_5*1e-3
+	### Check for turn_off flag
+	if turn_off_all:
+		Source_bias_1 = 0
+		Source_bias_2 = 0
+		Source_bias_3 = 0
+		Source_bias_4 = 0
+		Source_bias_5 = 0
 	### Set bias
 	if Source_1.lower() != 'off':
 		if Source_inst_1.is_on():
