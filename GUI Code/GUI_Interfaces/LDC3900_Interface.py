@@ -25,7 +25,7 @@
 #        consider implementing a check for error if no device connected #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Feb 1, 2024                                                     #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import time
@@ -60,7 +60,7 @@ class LDC3900:
 
 	def is_on(self):
 		self.set_channel()
-		if int(self.GPIB.query('LAS:OUT?')[:-1]):
+		if int(self.GPIB.query('LAS:OUT?')):
 			return True
 		else:
 			return False
@@ -148,9 +148,10 @@ class LDC3900:
 		self.set_channel()
 		if state == 'ON':
 			self.GPIB.write('LAS:OUT ON')
-			time.sleep(5) #Wait for device to turn on
+			time.sleep(4) #Wait for device to turn on
 		elif state == 'OFF':
 			self.GPIB.write('LAS:OUT OFF')
+			time.sleep(1)
 		else:
 			psg.popup("Channel state must be ON or OFF")
 

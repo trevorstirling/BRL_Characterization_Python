@@ -3,7 +3,7 @@
 # QST code from Zach Leger                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: May 29, 2024                                                    #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import numpy as np
@@ -22,6 +22,8 @@ else:
 	print('Time Tagger is only configured for Windows.')
 
 font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 text_width = 8
 input_width = 8
 
@@ -50,15 +52,40 @@ def GUI(debug=True):
 	#Create window
 	window = psg.Window('QST',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
-	calculate_angles(window,0,0,0,0)
-	highlight_angles(window,'HH')
+	#Set default values
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'Polarization':
+					highlight_angles(window,value)
+				elif key == 'Q1_H':
+					angle_Q1 = value
+				elif key == 'H1_H':
+					angle_H1 = value
+				elif key == 'Q2_H':
+					angle_Q2 = value
+				elif key == 'H2_H':
+					angle_H2 = value
+		calculate_angles(window,angle_Q1,angle_H1,angle_Q2,angle_H2)
+	else:
+		calculate_angles(window,0,0,0,0)
+		highlight_angles(window,'HH')
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
 		elif event == 'Polarization':
-			highlight_angles(window,values['Polarization'])
+			highlight_angles(window,values[event])
 		elif event == 'Alignment':
 			Alignment(window,values)
 		elif event == 'Collect Counts':
@@ -187,6 +214,14 @@ def Alignment(window,values):
 			fig.canvas.draw()
 
 def QST_Scan(window, values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	# Pull parameters from GUI
 	user_name = values['User_name']
 	signal_channel = int(values['signal_channel'])

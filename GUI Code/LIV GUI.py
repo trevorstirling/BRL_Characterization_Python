@@ -6,7 +6,7 @@
 # device_source5value_source4value_source3value_source2value.txt        #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Nov 22, 2023                                                    #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import numpy as np
@@ -17,6 +17,8 @@ from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_
 import PySimpleGUI as psg
 
 font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 
 def current_source_title(num):
 	return [[psg.Text('--------------- Source '+str(num)+' Options ---------------',font=(font, 20))]]
@@ -61,52 +63,49 @@ def GUI(debug=False):
 	window.finalize() #need to finalize window before editing it in any way
 	window['source_1'].update(value=default_source)
 	update_channel(window,default_source,'1')
+	#Set default values
+	num_sources = 0
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'Power_meter':
+					show_channel_options(window,value)
+				elif key == 'plot_density':
+					update_density_visibility(window,value)
+				elif key == 'pausing_enabled':
+					update_pausing_visibility(window,value)
+				elif key in ['source_'+str(i+1) for i in range(5)] and value != 'OFF':
+					num_sources += 1
+					update_channel(window,value,key.split("_")[1])
+				elif key in ['source_'+str(i+1)+'_mode' for i in range(5)]:
+					switch_v_i_text(window,key.split("_")[1],value)
+				elif key in ['pulsed_'+str(i+1) for i in range(5)]:
+					update_is_pulsed(window,key.split("_")[1],value)
+	num_sources = max(num_sources,1)
+	update_source_visibility(window,num_sources)
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
 		elif event == 'Power_meter':
-			if values['Power_meter'] == 'Newport':
-				window['Channel_1_text'].update(visible=True)
-				window['Channel_1'].update(visible=True)
-				window['Channel_2_text'].update(visible=True)
-				window['Channel_2'].update(visible=True)
-			else:
-				window['Channel_2'].update(visible=False)
-				window['Channel_2_text'].update(visible=False)
-				window['Channel_1'].update(visible=False)
-				window['Channel_1_text'].update(visible=False)
+			show_channel_options(window,values[event])
 		elif event == 'plot_density':
-			if values['plot_density']:
-				window['length_text'].update(visible=True)
-				window['device_length'].update(visible=True)
-				window['width_text'].update(visible=True)
-				window['device_width'].update(visible=True)
-			else:
-				window['device_width'].update(visible=False)
-				window['width_text'].update(visible=False)
-				window['device_length'].update(visible=False)
-				window['length_text'].update(visible=False)
+			update_density_visibility(window,values[event])
 		elif event == 'pausing_enabled':
-			if values['pausing_enabled']:
-				window['pause_interval_text'].update(visible=True)
-				window['pause_interval'].update(visible=True)
-			else:
-				window['pause_interval'].update(visible=False)
-				window['pause_interval_text'].update(visible=False)
+			update_pausing_visibility(window,values[event])
 		elif event in ['pulsed_'+str(i+1) for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event]:
-				window['pulse_width_'+num+'_text'].update(visible=True)
-				window['pulse_width_'+num].update(visible=True)
-				window['pulse_delay_'+num+'_text'].update(visible=True)
-				window['pulse_delay_'+num].update(visible=True)
-			else:
-				window['pulse_delay_'+num].update(visible=False)
-				window['pulse_delay_'+num+'_text'].update(visible=False)
-				window['pulse_width_'+num].update(visible=False)
-				window['pulse_width_'+num+'_text'].update(visible=False)
+			update_is_pulsed(window,num,values[event])
 		elif event == 'add_source':
 			num_sources = min(num_sources+1,5)
 			update_source_visibility(window,num_sources)
@@ -117,14 +116,7 @@ def GUI(debug=False):
 			update_channel(window,values[event],event[-1])
 		elif event in ['source_'+str(i+1)+'_mode' for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event] == 'Current':
-				window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
-				window['protection_'+num].update(value='4')
-				window['units_'+num].update(value='[mA]')
-			elif values[event] == 'Voltage':
-				window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
-				window['protection_'+num].update(value='100')
-				window['units_'+num].update(value='[V]')
+			switch_v_i_text(window,num,values[event])
 		elif event == 'LIV':
 			LIV(window,values)
 		elif event == 'Ω Check':
@@ -149,6 +141,60 @@ def GUI(debug=False):
 		elif event in ['pulse_delay_'+str(i+1) for i in range(5)]:
 			enforce_number(window,values,event,decimal_allowed=False)
 	window.close()
+
+def show_channel_options(window,power_meter):
+	if power_meter == 'Newport':
+		window['Channel_1_text'].update(visible=True)
+		window['Channel_1'].update(visible=True)
+		window['Channel_2_text'].update(visible=True)
+		window['Channel_2'].update(visible=True)
+	else:
+		window['Channel_2'].update(visible=False)
+		window['Channel_2_text'].update(visible=False)
+		window['Channel_1'].update(visible=False)
+		window['Channel_1_text'].update(visible=False)
+
+def update_density_visibility(window,show_density):
+	if show_density:
+		window['length_text'].update(visible=True)
+		window['device_length'].update(visible=True)
+		window['width_text'].update(visible=True)
+		window['device_width'].update(visible=True)
+	else:
+		window['device_width'].update(visible=False)
+		window['width_text'].update(visible=False)
+		window['device_length'].update(visible=False)
+		window['length_text'].update(visible=False)
+
+def update_pausing_visibility(window,pausing_enabled):
+	if pausing_enabled:
+		window['pause_interval_text'].update(visible=True)
+		window['pause_interval'].update(visible=True)
+	else:
+		window['pause_interval'].update(visible=False)
+		window['pause_interval_text'].update(visible=False)	
+
+def switch_v_i_text(window,num,mode):
+	if mode == 'Current':
+		window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
+		window['protection_'+num].update(value='4')
+		window['units_'+num].update(value='[mA]')
+	elif mode == 'Voltage':
+		window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
+		window['protection_'+num].update(value='100')
+		window['units_'+num].update(value='[V]')
+
+def update_is_pulsed(window,num,is_pulsed):
+	if is_pulsed:
+		window['pulse_width_'+num+'_text'].update(visible=True)
+		window['pulse_width_'+num].update(visible=True)
+		window['pulse_delay_'+num+'_text'].update(visible=True)
+		window['pulse_delay_'+num].update(visible=True)
+	else:
+		window['pulse_delay_'+num].update(visible=False)
+		window['pulse_delay_'+num+'_text'].update(visible=False)
+		window['pulse_width_'+num].update(visible=False)
+		window['pulse_width_'+num+'_text'].update(visible=False)
 
 def update_source_visibility(window,num_sources):
 	for i in range(5):
@@ -192,6 +238,14 @@ def resistance_check(window,values):
 	Source_inst.GPIB.control_ren(0)
 
 def LIV(window,values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

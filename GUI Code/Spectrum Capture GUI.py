@@ -2,7 +2,7 @@
 # Script to capture spectrum using various spectrum analyzers           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Dec 8, 2023                                                     #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import sys, os
@@ -13,12 +13,14 @@ import PySimpleGUI as psg
 
 symbol_open = '▾'
 symbol_closed = '▸'
+font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 
 def GUI(debug=False):
 	#Options
-	psg.set_options(font=('Tahoma', 16))
+	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
-	default_SA = 'AQ6374'
 	more_SA_options_open = False
 	#Define layout
 	if debug:
@@ -28,7 +30,7 @@ def GUI(debug=False):
 	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(6,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
 	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
-	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
+	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value='AQ6374', size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['A', 'B', 'C', 'D', 'E', 'F', 'G'], default_value='A', size=(2,1), readonly=True, key='Channel')],
 	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False)],
 	[BluePSGButton('Sweep'), psg.Push(), psg.Checkbox('Display', size=(8,1), key='Display_fig', default=True), psg.Checkbox('Save', size=(6,1), key='Save_fig', default=True), BluePSGButton('Capture'), BluePSGButton('Exit')], #push adds flexible whitespace
 	[psg.Text(symbol_closed, enable_events=True, key='more_SA_options'),psg.Text('More SA Functions')],
@@ -37,8 +39,22 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('Spectrum Analyzer Capture',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
-	update_channels(window, default_SA)
-	update_labels(window, default_SA)
+	#Set default values
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'Spectrum_analyzer':
+					update_channels(window, value)
+					update_labels(window, value)
 	#Poll for events
 	while True: 
 		event, values = window.read()
@@ -53,8 +69,8 @@ def GUI(debug=False):
 		elif event == 'Repeat':
 			sweep_continuously(values)
 		elif event == 'Spectrum_analyzer':
-			update_channels(window, values['Spectrum_analyzer'])
-			update_labels(window, values['Spectrum_analyzer'])
+			update_channels(window, values[event])
+			update_labels(window, values[event])
 		elif event == 'Capture':
 			Spectrum_Analyzer_Capture(window,values)
 		elif event == 'Sweep':
@@ -68,9 +84,9 @@ def GUI(debug=False):
 				window['more_SA_options'].update(symbol_closed)
 			window['SA_options'].update(visible=more_SA_options_open)
 		#data validation
-		elif event == 'wavelength' and len(values['wavelength']):
+		elif event == 'wavelength' and len(values[event]):
 			enforce_number(window,values,event)
-		elif event == 'span' and len(values['span']):
+		elif event == 'span' and len(values[span]):
 			enforce_number(window,values,event)
 	window.close()
 
@@ -142,6 +158,14 @@ def sweep_continuously(values):
 	spectrum_analyzer_inst.GPIB.control_ren(0)
 
 def Spectrum_Analyzer_Capture(window,values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 23, 2023                                                    #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -18,9 +18,13 @@ import time
 from GUI_common_functions import BluePSGButton,enforce_number,enforce_max_min,get_file_locations_GUI,connect_to_Piezo,connect_to_GPIB,plot_autocorrelator
 import PySimpleGUI as psg
 
+font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
+
 def GUI(debug=False):
 	#Options
-	psg.set_options(font=('Tahoma', 16))
+	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
 	#Define layout
 	if debug:
@@ -42,27 +46,39 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('Autocorrelation',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
+	#Set default values
+	num_sources = 0
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				value = value.replace(" u"," μ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'is_calibrated':
+					update_is_calibrated(window,value)
+				elif key == 'return_to_start':
+					update_return_to_start(window,value)
+				elif key == 'Sampling_rate':
+					sampling_rate = value
+				elif key == 'num_points':
+					num_points = value
+		update_approx_time(window,num_points,sampling_rate)
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
 		elif event == 'is_calibrated':
-			if values['is_calibrated']:
-				window['calib_factor_text'].update(visible=True)
-				window['time_scale_factor'].update(visible=True)
-			else:
-				window['time_scale_factor'].update(visible=False)
-				window['calib_factor_text'].update(visible=False)
+			update_is_calibrated(window,values[event])
 		elif event == 'return_to_start':
-			if values['return_to_start']:
-				window['reverse_factor_text'].update(visible=True)
-				window['reverse_correction_factor'].update(visible=True)
-			else:
-				window['reverse_correction_factor'].update(visible=False)
-				window['reverse_factor_text'].update(visible=False)
-		elif event == 'Spectrum_analyzer':
-			pass
+			update_return_to_start(window,values[event])
 		elif event == 'Autocorrelate':
 			Autocorrelation(window,values)
 		elif event == 'Monitor Power':
@@ -79,7 +95,7 @@ def GUI(debug=False):
 			window['Piezo_start_loc'].update(value='-1500')
 			window['reverse_correction_factor'].update(value='0.8')
 			_, values = window.read(timeout=1)
-			update_approx_time(window,values)
+			update_approx_time(window,values['num_points'],values['Sampling_rate'])
 		elif event == 'Default 2':
 			window['num_points'].update(value='16000')
 			window['Sampling_rate'].update(value='256 Hz')
@@ -91,30 +107,46 @@ def GUI(debug=False):
 			window['Piezo_start_loc'].update(value='-16000')
 			window['reverse_correction_factor'].update(value='0.85')
 			_, values = window.read(timeout=1)
-			update_approx_time(window,values)
+			update_approx_time(window,values['num_points'],values['Sampling_rate'])
+		elif event == 'Sampling_rate':
+			update_approx_time(window,values['num_points'],values['Sampling_rate'])
 		#data validation
-		elif event == 'num_points' and len(values['num_points']):
+		elif event == 'num_points' and len(values[event]):
 			enforce_number(window,values,event,decimal_allowed=False)
 			_, values = window.read(timeout=1)
-			if len(values['num_points']):
+			if len(values[event]):
 				enforce_max_min(window,values,event,16383,6)
 			_, values = window.read(timeout=1)
-			if len(values['num_points']):
-				update_approx_time(window,values)
-		elif event == 'Sampling_rate':
-			update_approx_time(window,values)
+			if len(values[event]):
+				update_approx_time(window,values['num_points'],values['Sampling_rate'])
 		elif event == 'Piezo_start_loc':
 			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
-		elif event == 'time_scale_factor' and len(values['time_scale_factor']):
+		elif event == 'time_scale_factor' and len(values[event]):
 			enforce_number(window,values,event)
-		elif event == 'reverse_correction_factor' and len(values['reverse_correction_factor']):
+		elif event == 'reverse_correction_factor' and len(values[event]):
 			enforce_number(window,values,event)
-		elif event == 'step_amplitude' and len(values['step_amplitude']):
+		elif event == 'step_amplitude' and len(values[event]):
 			enforce_number(window,values,event,decimal_allowed=False,negative_allowed=True)
 			_, values = window.read(timeout=1)
 			if len(values['num_points']):
 				enforce_max_min(window,values,event,50,-50)
 	window.close()
+
+def update_is_calibrated(window,is_calibrated):
+	if is_calibrated:
+		window['calib_factor_text'].update(visible=True)
+		window['time_scale_factor'].update(visible=True)
+	else:
+		window['time_scale_factor'].update(visible=False)
+		window['calib_factor_text'].update(visible=False)
+
+def update_return_to_start(window,return_to_start):
+	if return_to_start:
+		window['reverse_factor_text'].update(visible=True)
+		window['reverse_correction_factor'].update(visible=True)
+	else:
+		window['reverse_correction_factor'].update(visible=False)
+		window['reverse_factor_text'].update(visible=False)
 
 def Monitor_power(values):
 	#initialize parameters
@@ -155,9 +187,9 @@ def update_power_monitor(frame,PM_inst,x,y,fig,line,start_time):
 	fig.gca().relim()
 	fig.gca().autoscale_view()
 
-def update_approx_time(window,values):
-	num_points = int(values['num_points'])
-	Lock_in_sampling_rate = values['Sampling_rate']
+def update_approx_time(window,num_points,sampling_rate):
+	num_points = int(num_points)
+	Lock_in_sampling_rate = sampling_rate
 	Lock_in_sampling_rate_units = Lock_in_sampling_rate.split(" ")[1]
 	if Lock_in_sampling_rate_units == 'mHz':
 		Lock_in_sampling_rate = round(float(Lock_in_sampling_rate.split(" ")[0])*1e-3,3)
@@ -178,6 +210,14 @@ def update_approx_time(window,values):
 		window['approx_time'].update(value="Approx time: "+str(num_sec_total)+"s")
 
 def Autocorrelation(window,values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value).replace("μ","u")+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']
@@ -295,6 +335,7 @@ def Autocorrelation(window,values):
 	Piezo_inst.disconnect()
 	Lock_in_inst.GPIB.control_ren(0)
 	print(" Disconnected from instruments")
+	window.Refresh()
 	x_axis = [i for i in range(num_points)]
 	### Save data to file
 	if save_data:

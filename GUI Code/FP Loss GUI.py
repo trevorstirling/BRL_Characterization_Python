@@ -5,7 +5,7 @@
 # Recommended to turn coherence control off on the laser                #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Nov 23, 2023                                                    #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import numpy as np
@@ -16,6 +16,8 @@ from GUI_common_functions import BluePSGButton,enforce_number,get_file_locations
 import PySimpleGUI as psg
 
 font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 
 def GUI(debug=False):
 	#Options
@@ -38,6 +40,19 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('FP Loss',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
+	#Set default values
+	num_sources = 0
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
 	#Poll for events
 	while True: 
 		event, values = window.read()
@@ -54,6 +69,14 @@ def GUI(debug=False):
 
 def FP_Loss(window,values):
 	set_PM_parameters = True
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	scan_name = values['Device_name']

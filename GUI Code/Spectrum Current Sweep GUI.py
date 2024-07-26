@@ -3,7 +3,7 @@
 # equipment                                                             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Dec 8, 2023                                                     #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import numpy as np
@@ -14,13 +14,13 @@ from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_
 import PySimpleGUI as psg
 
 font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 
 def GUI(debug=False):
 	#Options
 	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
-	default_SA = 'AQ6374'
-	default_source = 'B2902A'
 	num_sources = 1
 	#Define layout
 	if debug:
@@ -31,7 +31,7 @@ def GUI(debug=False):
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Button('', image_data=minus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='remove_source'), psg.Text('Add or Remove Sources'), psg.Button('', image_data=plus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='add_source')],
 	[psg.Push(),psg.Text('--------------- Spectrum Analyzer Options ---------------',font=(font, 20)),psg.Push()],
-	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value=default_SA, size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['Select Spectrum Analyzer first'], size=(2,1), readonly=True, key='Channel')],
+	[psg.Text('Spectrum Analyzer:'), psg.Combo(['A86146B', 'A86142A', 'AQ6317B', 'AQ6374', 'E4407B'], default_value='AQ6374', size=(8,1), enable_events=True, readonly=True, key='Spectrum_analyzer'), psg.Text('Channel:'), psg.Combo(['A', 'B', 'C', 'D', 'E', 'F', 'G'], default_value='A', size=(2,1), readonly=True, key='Channel')],
 	[psg.Checkbox('Show FWHM', size=(12,1), key='FWHM', default=False),psg.Checkbox('Show SMSR', size=(12,1), key='SMSR', default=False),psg.Checkbox('Track Peak', size=(11,1), key='adjust_center', default=False)],
 	[psg.Push(),psg.pin(psg.Column(current_source_title(1),key='source_1_title',visible=True)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(1),key='source_1_options',visible=True))],
@@ -48,55 +48,39 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('Spectrum Current Sweep',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
-	update_SA_channel(window, default_SA)
-	window['source_1'].update(value=default_source)
-	update_channel(window,default_source,'1')
+	#Set default values
+	num_sources = 0
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'Spectrum_analyzer':
+					update_SA_channel(window, value)
+				elif key in ['source_'+str(i+1) for i in range(5)] and value != 'OFF':
+					num_sources += 1
+					update_channel(window,value,key.split("_")[1])
+				elif key in ['source_'+str(i+1)+'_mode' for i in range(5)]:
+					switch_v_i_text(window,key.split("_")[1],value)
+				elif key in ['pulsed_'+str(i+1) for i in range(5)]:
+					update_is_pulsed(window,key.split("_")[1],value)
+	num_sources = max(num_sources,1)
+	update_source_visibility(window,num_sources)
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
-		elif event == 'Power_meter':
-			if values['Power_meter'] == 'Newport':
-				window['Channel_1_text'].update(visible=True)
-				window['Channel_1'].update(visible=True)
-				window['Channel_2_text'].update(visible=True)
-				window['Channel_2'].update(visible=True)
-			else:
-				window['Channel_2'].update(visible=False)
-				window['Channel_2_text'].update(visible=False)
-				window['Channel_1'].update(visible=False)
-				window['Channel_1_text'].update(visible=False)
-		elif event == 'plot_density':
-			if values['plot_density']:
-				window['length_text'].update(visible=True)
-				window['device_length'].update(visible=True)
-				window['width_text'].update(visible=True)
-				window['device_width'].update(visible=True)
-			else:
-				window['device_width'].update(visible=False)
-				window['width_text'].update(visible=False)
-				window['device_length'].update(visible=False)
-				window['length_text'].update(visible=False)
-		elif event == 'pausing_enabled':
-			if values['pausing_enabled']:
-				window['pause_interval_text'].update(visible=True)
-				window['pause_interval'].update(visible=True)
-			else:
-				window['pause_interval'].update(visible=False)
-				window['pause_interval_text'].update(visible=False)
 		elif event in ['pulsed_'+str(i+1) for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event]:
-				window['pulse_width_'+num+'_text'].update(visible=True)
-				window['pulse_width_'+num].update(visible=True)
-				window['pulse_delay_'+num+'_text'].update(visible=True)
-				window['pulse_delay_'+num].update(visible=True)
-			else:
-				window['pulse_delay_'+num].update(visible=False)
-				window['pulse_delay_'+num+'_text'].update(visible=False)
-				window['pulse_width_'+num].update(visible=False)
-				window['pulse_width_'+num+'_text'].update(visible=False)
+			update_is_pulsed(window,num,values[event])
 		elif event == 'add_source':
 			num_sources = min(num_sources+1,5)
 			update_source_visibility(window,num_sources)
@@ -107,21 +91,14 @@ def GUI(debug=False):
 			update_channel(window,values[event],event[-1])
 		elif event in ['source_'+str(i+1)+'_mode' for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event] == 'Current':
-				window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
-				window['protection_'+num].update(value='4')
-				window['units_'+num].update(value='[mA]')
-			elif values[event] == 'Voltage':
-				window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
-				window['protection_'+num].update(value='100')
-				window['units_'+num].update(value='[V]')
+			switch_v_i_text(window,num,values[event])
 		#data validation
 		elif event == 'Capture Sweep':
 			Spectrum_Analyzer_Capture_Source_Sweep(window,values)
 		elif event == 'Ω Check':
 			resistance_check(window, values)
 		elif event == 'Spectrum_analyzer':
-			update_SA_channel(window, values['Spectrum_analyzer'])
+			update_SA_channel(window, values[event])
 		#data validation
 		elif event == 'device_length':
 			enforce_number(window,values,event)
@@ -142,6 +119,28 @@ def GUI(debug=False):
 		elif event in ['pulse_delay_'+str(i+1) for i in range(5)]:
 			enforce_number(window,values,event,decimal_allowed=False)
 	window.close()
+
+def switch_v_i_text(window,num,mode):
+	if mode == 'Current':
+		window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
+		window['protection_'+num].update(value='4')
+		window['units_'+num].update(value='[mA]')
+	elif mode == 'Voltage':
+		window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
+		window['protection_'+num].update(value='100')
+		window['units_'+num].update(value='[V]')
+
+def update_is_pulsed(window,num,is_pulsed):
+	if is_pulsed:
+		window['pulse_width_'+num+'_text'].update(visible=True)
+		window['pulse_width_'+num].update(visible=True)
+		window['pulse_delay_'+num+'_text'].update(visible=True)
+		window['pulse_delay_'+num].update(visible=True)
+	else:
+		window['pulse_delay_'+num].update(visible=False)
+		window['pulse_delay_'+num+'_text'].update(visible=False)
+		window['pulse_width_'+num].update(visible=False)
+		window['pulse_width_'+num+'_text'].update(visible=False)
 
 def current_source_title(num):
 	return [[psg.Text('--------------- Source '+str(num)+' Options ---------------',font=(font, 20))]]
@@ -203,6 +202,14 @@ def resistance_check(window,values):
 	Source_inst.GPIB.control_ren(0)
 
 def Spectrum_Analyzer_Capture_Source_Sweep(window, values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

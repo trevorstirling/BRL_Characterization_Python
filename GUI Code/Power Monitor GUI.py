@@ -2,7 +2,7 @@
 # Script to monitor power from Newport Power Meter                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Oct 10, 2023                                                    #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import matplotlib.pyplot as plt
@@ -12,9 +12,13 @@ import time
 from GUI_common_functions import BluePSGButton,enforce_number,connect_to_GPIB,connect_to_PM
 import PySimpleGUI as psg
 
+font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
+
 def GUI(debug=False):
 	#Options
-	psg.set_options(font=('Tahoma', 16))
+	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
 	#Define layout
 	if debug:
@@ -28,13 +32,28 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('Power Monitor',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
+	#Set default values
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key == 'Power_meter':
+					update_channels(window, value)
 	#Poll for events
 	while True: 
 		event, values = window.read()
 		if event == psg.WIN_CLOSED or event == 'Exit':
 			break
 		elif event == 'Power_meter':
-			update_channels(window, values['Power_meter'])
+			update_channels(window, values[event])
 		elif event == 'Start':
 			Power_Monitor(window,values)
 		#data validation
@@ -59,6 +78,14 @@ def update_channels(window, power_meter):
 		window['channel_text'].update(visible=False)
 
 def Power_Monitor(window,values):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	Power_meter = values['Power_meter']
 	Power_meter_channel = values['Channel']
@@ -81,13 +108,20 @@ def Power_Monitor(window,values):
 	if Power_meter == 'Newport':
 		from GUI_Interfaces import Newport_PM_Interface
 		PM_inst = connect_to_PM(Power_meter_channel)
+		if not PM_inst:
+			return
 	elif Power_meter == 'K2520':
-		input(colour.yellow+" The K2520 must be enabled to act as a power meter. It will be biased to 0 mA. Press any key to continue..."+colour.end)
+		print(" The K2520 must be enabled to act as a power meter. It will be biased to 0 mA.")
+		window.Refresh()
 		PM_inst = connect_to_GPIB(Power_meter,["Current",1,4,0.1,"DC",20e-5,1e-6])
+		if not PM_inst:
+			return
 		PM_inst.set_value(0)
 		PM_inst.set_output('ON')
 	elif Power_meter == 'SR830':
 		PM_inst = connect_to_GPIB(Power_meter)
+		if not PM_inst:
+			return
 	else:
 		raise Exception(colour.red+" "+Power_meter," is not set up as a power meter"+colour.end)
 	#initialize vectors

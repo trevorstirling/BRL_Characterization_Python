@@ -3,7 +3,7 @@
 # using up to five current/voltage sources (various models)             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Feb 7, 2024                                                     #
+# Date: July 24, 2024                                                   #
 #########################################################################
 
 import numpy as np
@@ -14,6 +14,8 @@ from GUI_common_functions import BluePSGButton,enforce_number,plus_button,minus_
 import PySimpleGUI as psg
 
 font = 'Tahoma'
+GUI_defaults_dir = os.path.join(os.path.dirname(__file__),"GUI Defaults")
+GUI_file = os.path.basename(__file__).replace(" GUI.py",".txt")
 
 def current_source_title(num):
 	return [[psg.Text('--------------- Source '+str(num)+' Options ---------------',font=(font, 20))]]
@@ -50,8 +52,29 @@ def GUI(debug=False):
 	#Create window
 	window = psg.Window('Set Bias',layout, resizable=True)
 	window.finalize() #need to finalize window before editing it in any way
-	window['source_1'].update(value=default_source)
-	update_channel(window,default_source,'1')
+	#Set default values
+	num_sources = 0
+	if os.path.isfile(os.path.join(GUI_defaults_dir,GUI_file)):
+		with open(os.path.join(GUI_defaults_dir, GUI_file),"r") as f:
+			data = f.read()
+			data = data.split("\n")
+			for line in data[:-1]:
+				key, value = line.split(": ")
+				if value == "True":
+					value = True
+				elif value == "False":
+					value = False
+				window[key].update(value=value)
+				#Update GUI based on selections
+				if key in ['source_'+str(i+1) for i in range(5)] and value != 'OFF':
+					num_sources += 1
+					update_channel(window,value,key.split("_")[1])
+				elif key in ['source_'+str(i+1)+'_mode' for i in range(5)]:
+					switch_v_i_text(window,key.split("_")[1],value)
+				elif key in ['pulsed_'+str(i+1) for i in range(5)]:
+					update_is_pulsed(window,key.split("_")[1],value)
+	num_sources = max(num_sources,1)
+	update_source_visibility(window,num_sources)
 	#Poll for events
 	while True: 
 		event, values = window.read()
@@ -59,16 +82,7 @@ def GUI(debug=False):
 			break
 		elif event in ['pulsed_'+str(i+1) for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event]:
-				window['pulse_width_'+num+'_text'].update(visible=True)
-				window['pulse_width_'+num].update(visible=True)
-				window['pulse_delay_'+num+'_text'].update(visible=True)
-				window['pulse_delay_'+num].update(visible=True)
-			else:
-				window['pulse_delay_'+num].update(visible=False)
-				window['pulse_delay_'+num+'_text'].update(visible=False)
-				window['pulse_width_'+num].update(visible=False)
-				window['pulse_width_'+num+'_text'].update(visible=False)
+			update_is_pulsed(window,num,values[event])
 		elif event == 'add_source':
 			num_sources = min(num_sources+1,5)
 			update_source_visibility(window,num_sources)
@@ -79,14 +93,7 @@ def GUI(debug=False):
 			update_channel(window,values[event],event[-1])
 		elif event in ['source_'+str(i+1)+'_mode' for i in range(5)]:
 			num = event.split('_')[1]
-			if values[event] == 'Current':
-				window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
-				window['protection_'+num].update(value='4')
-				window['units_'+num].update(value='[mA]')
-			elif values[event] == 'Voltage':
-				window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
-				window['protection_'+num].update(value='100')
-				window['units_'+num].update(value='[V]')
+			switch_v_i_text(window,num,values[event])
 		elif event == 'Set Bias':
 			Set_Bias(window,values)
 		elif event == 'Zero Bias':
@@ -103,6 +110,28 @@ def GUI(debug=False):
 		elif event in ['pulse_delay_'+str(i+1) for i in range(5)]:
 			enforce_number(window,values,event,decimal_allowed=False)
 	window.close()
+
+def switch_v_i_text(window,num,mode):
+	if mode == 'Current':
+		window['protection_'+num+'_text'].update(value='Protection Voltage [V]:')
+		window['protection_'+num].update(value='4')
+		window['units_'+num].update(value='[mA]')
+	elif mode == 'Voltage':
+		window['protection_'+num+'_text'].update(value='Protection Current [mA]:')
+		window['protection_'+num].update(value='100')
+		window['units_'+num].update(value='[V]')
+
+def update_is_pulsed(window,num,is_pulsed):
+	if is_pulsed:
+		window['pulse_width_'+num+'_text'].update(visible=True)
+		window['pulse_width_'+num].update(visible=True)
+		window['pulse_delay_'+num+'_text'].update(visible=True)
+		window['pulse_delay_'+num].update(visible=True)
+	else:
+		window['pulse_delay_'+num].update(visible=False)
+		window['pulse_delay_'+num+'_text'].update(visible=False)
+		window['pulse_width_'+num].update(visible=False)
+		window['pulse_width_'+num+'_text'].update(visible=False)
 
 def update_source_visibility(window,num_sources):
 	for i in range(5):
@@ -146,6 +175,14 @@ def resistance_check(window,values):
 	Source_inst.GPIB.control_ren(0)
 
 def Set_Bias(window,values,turn_off_all=False):
+	#Save current settings to default file
+	if not os.path.isdir(GUI_defaults_dir):
+		os.makedirs(GUI_defaults_dir)
+		print(" Created new directory:", GUI_defaults_dir)
+		window.Refresh()
+	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
+		for field, value in values.items():
+			f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	#Source 1
 	Source_1 = values['source_1']
