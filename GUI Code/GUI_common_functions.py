@@ -184,6 +184,14 @@ def connect_to_GPIB(device_name,parameters=[]):
 			return False
 		device_inst = K2520_Interface.K2520(rm, GPIB_address, parameters[1], parameters[0])
 		device_type = 'Source'
+	elif device_name == 'PulseScope':
+		from GUI_Interfaces import APE_Autocorrelator_Interface
+		GPIB_address = 'GPIB0::11::INSTR'
+		rm = check_GPIB_connection(device_name, GPIB_address)
+		if not rm:
+			return False
+		device_inst = APE_Autocorrelator_Interface.APE_Autocorrelator(rm, GPIB_address)
+		device_type = 'Autocorrelator'
 	elif device_name.lower() == 'off':
 		return 'off'
 	else:
@@ -603,4 +611,30 @@ def plot_autocorrelator(device_name, time, intensity, envelope_reduction_factor=
 		plt.xlabel(x_axis_text)
 		plt.ylabel('Intensity [A.U.]')
 		plt.title(device_name)
+	return [fig,FWHM/1.54]
+
+def plot_intensity_autocorrelation(device_name, time, intensity, plot_fit=True, normalize=True, len_background=15):
+	if normalize:
+		intensity_max = max(intensity)
+		intensity = [i/intensity_max for i in intensity]
+	intensity = np.array(intensity) #[A.U.]
+	time = np.array(time) #[fs]
+	#Fit
+	max_index = np.argmax(intensity)
+	max_time = time[max_index]
+	offset_estimate = sum(intensity[:len_background])/len_background
+	width_estimate = 100 #[fs]
+	filtered_params,_ = curve_fit(SechSqr, time, intensity, p0=[offset_estimate, 1-offset_estimate, max_time, width_estimate])
+	filtered_params[3] = abs(filtered_params[3]) #ensure width is positive
+	FWHM = filtered_params[3]*1.7627 #[fs]
+	#incease fitted curve resolution 
+	time_mesh = np.linspace(time[0],time[-1],1000)
+	#Format figure
+	fig, ax1 = plt.subplots()
+	plt.plot(time,intensity,'o',color='0.6')
+	if plot_fit:
+		plt.plot(time_mesh,SechSqr(time_mesh,*filtered_params))
+	plt.xlabel('Time [fs]\nAutocorrelator sech$^2$ FWHM '+"{:.1f}".format(FWHM)+' fs\nCorresponding pulse FWHM '+"{:.1f}".format(FWHM/1.54)+' fs')
+	plt.ylabel('Intensity [A.U.]')
+	plt.title(device_name)
 	return [fig,FWHM/1.54]
