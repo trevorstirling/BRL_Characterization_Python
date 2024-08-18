@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 24, 2024                                                   #
+# Date: Aug 18, 2024                                                    #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -362,7 +362,7 @@ def Autocorrelation(window,values):
 		else:
 			plt.close()
 	if not is_calibrated:
-		print(" If this is a calibration run with a 110 fs pulse, use time_scale_factor = "+"{:.3f}".format(FWHM/110))
+		print(" If this is a calibration run with a 94 fs pulse, use time_scale_factor = "+"{:.3f}".format(FWHM/94))
 		window.Refresh()
 	window.Refresh()
 
