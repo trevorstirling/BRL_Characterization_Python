@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 18, 2024                                                    #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -91,7 +91,7 @@ def GUI(debug=False):
 			window['is_calibrated'].update(value=True)
 			window['calib_factor_text'].update(visible=True)
 			window['time_scale_factor'].update(visible=True)
-			window['time_scale_factor'].update(value='1.954')
+			window['time_scale_factor'].update(value='2.257')
 			window['Piezo_start_loc'].update(value='-1500')
 			window['reverse_correction_factor'].update(value='0.8')
 			_, values = window.read(timeout=1)
@@ -103,7 +103,7 @@ def GUI(debug=False):
 			window['is_calibrated'].update(value=True)
 			window['calib_factor_text'].update(visible=True)
 			window['time_scale_factor'].update(visible=True)
-			window['time_scale_factor'].update(value='0.146')
+			window['time_scale_factor'].update(value='0.1686')
 			window['Piezo_start_loc'].update(value='-16000')
 			window['reverse_correction_factor'].update(value='0.85')
 			_, values = window.read(timeout=1)
