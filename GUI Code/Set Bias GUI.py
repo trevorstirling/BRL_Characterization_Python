@@ -3,7 +3,7 @@
 # using up to five current/voltage sources (various models)             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 24, 2024                                                   #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 import numpy as np
@@ -35,7 +35,7 @@ def GUI(debug=False):
 	if debug:
 		print_window = []
 	else:
-		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+		print_window = [psg.Multiline(size=(10,5), expand_x=True, expand_y=True, key='output', reroute_stdout=True)]
 	layout = [[psg.Button('', image_data=minus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='remove_source'), psg.Text('Add or Remove Sources'), psg.Button('', image_data=plus_button, image_subsample=12, button_color=('black', psg.theme_background_color()), border_width=0, enable_events=True, key='add_source')],
 	[psg.Push(),psg.pin(psg.Column(current_source_title(1),key='source_1_title',visible=True)),psg.Push()],
 	[psg.pin(psg.Column(current_source_layout(1),key='source_1_options',visible=True))],

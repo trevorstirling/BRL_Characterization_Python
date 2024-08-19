@@ -1,0 +1,10 @@
+::Replace the top line with the directory of the python files
+::Replace "Sample GUI.py" with the python file you wish to run
+::Save with .bat extension instead of .txt
+
+cd C:\Users\Characterization\Documents\Characterization GUIs\Python
+set errorlog="pythonerrorlogs.txt"
+>>%errorlog% echo.
+>>%errorlog% echo %date%
+>>%errorlog% echo %time%
+python "Sample GUI.py" 2>>%errorlog%

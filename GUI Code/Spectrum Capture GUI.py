@@ -2,7 +2,7 @@
 # Script to capture spectrum using various spectrum analyzers           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 24, 2024                                                   #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 import sys, os
@@ -26,7 +26,7 @@ def GUI(debug=False):
 	if debug:
 		print_window = []
 	else:
-		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+		print_window = [psg.Multiline(size=(10,5), expand_x=True, expand_y=True, key='output', reroute_stdout=True)]
 	SA_options = [[BluePSGButton('Peak to Center'), psg.InputText('780', key='wavelength', size=(6,1), enable_events=True), BluePSGButton('Set λ [nm]', key='set_center'), psg.InputText('20', key='span', size=(3,1), enable_events=True), BluePSGButton('Set span [nm]', key='set_span'), BluePSGButton('Repeat')]]
 	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],

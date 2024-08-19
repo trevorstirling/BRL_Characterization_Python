@@ -2,7 +2,7 @@
 # Script to capture Autocorrelation Trace from APE Pulse Check          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 30, 2024                                                   #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 import sys, os
@@ -23,7 +23,7 @@ def GUI(debug=False):
 	if debug:
 		print_window = []
 	else:
-		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+		print_window = [psg.Multiline(size=(10,5), expand_x=True, expand_y=True, key='output', reroute_stdout=True)]
 	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Autocorrelator:'), psg.Combo(['PulseScope'], default_value='PulseScope', size=(10,1), enable_events=True, readonly=True, key='Autocorrelator')],

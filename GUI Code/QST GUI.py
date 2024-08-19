@@ -3,7 +3,7 @@
 # QST code from Zach Leger                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 24, 2024                                                   #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 import numpy as np
@@ -36,7 +36,7 @@ def GUI(debug=True):
 	if debug:
 		print_window = []
 	else:
-		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+		print_window = [psg.Multiline(size=(10,5), expand_x=True, expand_y=True, key='output', reroute_stdout=True)]
 	layout = [[psg.Text('Your Name:'), psg.InputText('', key='User_name', size=(30,1), expand_x=True), psg.Text('(for data saving)')],
 	[psg.Text('Device Name:'), psg.InputText('', key='Device_name', size=(30,1), expand_x=True)],
 	[psg.Text('Name Appendix:'), psg.InputText('1', key='appendix', size=(3,1)), psg.Text('Integration Time:'), psg.InputText('5', key='int_time', size=(3,1), enable_events=True), psg.Text('s')],

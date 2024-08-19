@@ -2,7 +2,7 @@
 # Script to monitor power from Newport Power Meter                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: July 24, 2024                                                   #
+# Date: Aug 19, 2024                                                    #
 #########################################################################
 
 import matplotlib.pyplot as plt
@@ -24,7 +24,7 @@ def GUI(debug=False):
 	if debug:
 		print_window = []
 	else:
-		print_window = [psg.Output(size=(10,5), expand_x=True, expand_y=True, key='output')]
+		print_window = [psg.Multiline(size=(10,5), expand_x=True, expand_y=True, key='output', reroute_stdout=True)]
 	layout = [[psg.Text('Power Meter:'), psg.Combo(['Newport', 'SR830', 'K2520'], default_value='Newport', size=(8,1), enable_events=True, readonly=True, key='Power_meter'), psg.Text('Channel:', key='channel_text'), psg.Combo(['A','B'], default_value='A', size=(2,1), readonly=True, key='Channel', visible=True), psg.Text('Range:'), psg.Combo(['W', 'mW', 'μW', 'nW', 'pW'], default_value='mW', size=(4,1), enable_events=True, readonly=True, key='Range'), ],
 	[psg.Text('Display Time [s]:'), psg.InputText('10', key='display_time', size=(4,1), enable_events=True), psg.Text('Update Time [s]:'), psg.InputText('0.07', key='update_time', size=(4,1), enable_events=True)],
 	[psg.Push(),BluePSGButton('Start'), BluePSGButton('Exit')],
