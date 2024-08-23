@@ -2,7 +2,7 @@
 # Script to capture Autocorrelation Trace from APE Pulse Check          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 19, 2024                                                    #
+# Date: Aug 23, 2024                                                    #
 #########################################################################
 
 import sys, os
@@ -61,7 +61,8 @@ def Intensity_Autocorrelation_Capture(window,values):
 		window.Refresh()
 	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
 		for field, value in values.items():
-			f.write(field+": "+str(value)+"\n")
+			if field != "output":
+				f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

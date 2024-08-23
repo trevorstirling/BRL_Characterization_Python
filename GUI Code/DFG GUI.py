@@ -4,7 +4,7 @@
 # Recommended span = 5nm, resolution = 0.5 nm                           #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 19, 2024                                                    #
+# Date: Aug 23, 2024                                                    #
 #########################################################################
 
 # Untested - may need some debugging
@@ -93,7 +93,8 @@ def Sweep_DFG(window,values):
 		window.Refresh()
 	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
 		for field, value in values.items():
-			f.write(field+": "+str(value)+"\n")
+			if field != "output":
+				f.write(field+": "+str(value)+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

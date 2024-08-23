@@ -5,7 +5,7 @@
 # device_SamplingRate_PiezoSpeed_NumPoints.txt                          #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 19, 2024                                                    #
+# Date: Aug 23, 2024                                                    #
 #########################################################################
 
 #Removed step amplitude option as both 100 Hz and 1700 Hz jogs overwrite to 50 automatically
@@ -217,7 +217,8 @@ def Autocorrelation(window,values):
 		window.Refresh()
 	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
 		for field, value in values.items():
-			f.write(field+": "+str(value).replace("μ","u")+"\n")
+			if field != "output":
+				f.write(field+": "+str(value).replace("μ","u")+"\n")
 	### Get parameters from GUI
 	user_name = values['User_name']
 	device_name = values['Device_name']

@@ -3,7 +3,7 @@
 # QST code from Zach Leger                                              #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 19, 2024                                                    #
+# Date: Aug 23, 2024                                                    #
 #########################################################################
 
 import numpy as np
@@ -221,7 +221,8 @@ def QST_Scan(window, values):
 		window.Refresh()
 	with open(os.path.join(GUI_defaults_dir, GUI_file),"w") as f:
 		for field, value in values.items():
-			f.write(field+": "+str(value)+"\n")
+			if field != "output":
+				f.write(field+": "+str(value)+"\n")
 	# Pull parameters from GUI
 	user_name = values['User_name']
 	signal_channel = int(values['signal_channel'])
