@@ -1,9 +1,10 @@
 ::Replace the top line with the directory of the python files
 ::Replace "Sample GUI.py" with the python file you wish to run
+::Replace "Error_Logs\GUI_Name_Error_Log.txt" with the location to save errors. The directory must exist already.
 ::Save with .bat extension instead of .txt
 
 cd C:\Users\Characterization\Documents\Characterization GUIs\Python
-set errorlog="pythonerrorlogs.txt"
+set errorlog="Error_Logs\GUI_Name_Error_Log.txt"
 >>%errorlog% echo.
 >>%errorlog% echo %date%
 >>%errorlog% echo %time%

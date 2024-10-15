@@ -3,7 +3,7 @@
 # analysis scripts                                                      #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 19, 2024                                                    #
+# Date: Oct 15, 2024                                                    #
 #########################################################################
 
 import PySimpleGUI as psg
@@ -31,6 +31,21 @@ def connect_to_Piezo(port, channel, axis):
 		return Newport_Piezo_Interface.Newport_Piezo("", port, channel, axis)
 	else:
 		psg.popup("Piezo is not yet configured for MacOS!")
+		return False
+
+def connect_to_Spectrometer():
+	if sys.platform == "win32":
+		sys.path.append(r'C:\Program Files\Ocean Optics\OceanDirect SDK\Python')
+		from oceandirect.OceanDirectAPI import OceanDirectAPI
+		od = OceanDirectAPI()
+		num_devices = od.find_usb_devices()
+		if num_devices != 0:
+			print(" Connected to Ocean Insight Spectromoeter")
+			return od.open_device(od.get_device_ids()[0])
+		psg.popup("Could not connect to Ocean Insight Spectromoeter.")
+		return False
+	else:
+		psg.popup("Spectrometer is not yet configured for MacOS!")
 		return False
 
 def connect_to_PM(channel):
@@ -151,6 +166,18 @@ def connect_to_GPIB(device_name,parameters=[]):
 			return False
 		from GUI_Interfaces import B2902A_Interface
 		GPIB_address = 'GPIB0::23::INSTR'
+		rm = check_GPIB_connection(device_name, GPIB_address)
+		if not rm:
+			return False
+		device_inst = B2902A_Interface.B2902A(rm, GPIB_address, parameters[1], parameters[0])
+		device_type = 'Source'
+	elif device_name == 'B2902B':
+		num_params = 7 #Source_mode,Source_channel,protection_voltage,protection_current,waveform,pulse_delay,pulse_width
+		if len(parameters)<num_params:
+			psg.popup(device_name+" requires "+str(num_params)+" parameters")
+			return False
+		from GUI_Interfaces import B2902A_Interface
+		GPIB_address = 'GPIB0::26::INSTR'
 		rm = check_GPIB_connection(device_name, GPIB_address)
 		if not rm:
 			return False

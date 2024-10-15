@@ -3,7 +3,7 @@
 # using up to five current/voltage sources (various models)             #
 #                                                                       #
 # Author: Trevor Stirling                                               #
-# Date: Aug 23, 2024                                                    #
+# Date: Oct 15, 2024                                                    #
 #########################################################################
 
 import numpy as np
@@ -21,7 +21,7 @@ def current_source_title(num):
 	return [[psg.Text('--------------- Source '+str(num)+' Options ---------------',font=(font, 20))]]
 
 def current_source_layout(num):
-	layout = [[psg.Text('Source:'), psg.Combo(['K2520', 'K2604B', 'B2902A', 'LDC3908', 'LDC3916', 'OFF'], default_value='OFF', size=(8,1), enable_events=True, readonly=True, key='source_'+str(num)), psg.Text('Channel:'), psg.Combo([''], size=(3,1), readonly=True, key='source_'+str(num)+'_channel'),psg.Text('Mode:'), psg.Combo(['Current', 'Voltage'], default_value='Current', size=(8,1), enable_events=True, readonly=True, key='source_'+str(num)+'_mode'), psg.Text('Protection Voltage [V]:',key='protection_'+str(num)+'_text'), psg.InputText('4', key='protection_'+str(num), size=(4,1), enable_events=True)],
+	layout = [[psg.Text('Source:'), psg.Combo(['K2520', 'K2604B', 'B2902A', 'B2902B', 'LDC3908', 'LDC3916', 'OFF'], default_value='OFF', size=(8,1), enable_events=True, readonly=True, key='source_'+str(num)), psg.Text('Channel:'), psg.Combo([''], size=(3,1), readonly=True, key='source_'+str(num)+'_channel'),psg.Text('Mode:'), psg.Combo(['Current', 'Voltage'], default_value='Current', size=(8,1), enable_events=True, readonly=True, key='source_'+str(num)+'_mode'), psg.Text('Protection Voltage [V]:',key='protection_'+str(num)+'_text'), psg.InputText('4', key='protection_'+str(num), size=(4,1), enable_events=True)],
 	[psg.Text('Bias:'),psg.InputText('1', key='bias_'+str(num), size=(4,1), enable_events=True),psg.Text('[mA]',key='units_'+str(num)),psg.Checkbox('Pulsed', size=(8,1), key='pulsed_'+str(num), default=False, enable_events=True),psg.Text('Pulse Width [μs]:', key='pulse_width_'+str(num)+'_text', visible=False),psg.InputText('8', key='pulse_width_'+str(num), size=(2,1), enable_events=True, visible=False),psg.Text('Pulse Delay [μs]:', key='pulse_delay_'+str(num)+'_text', visible=False),psg.InputText('160', key='pulse_delay_'+str(num), size=(4,1), enable_events=True, visible=False)]]
 	return layout
 
@@ -29,7 +29,7 @@ def GUI(debug=False):
 	#Options
 	psg.set_options(font=(font, 16))
 	psg.theme('DarkBlue14')
-	default_source = 'B2902A'
+	default_source = 'B2902B'
 	num_sources = 1
 	#Define layout
 	if debug:
@@ -148,7 +148,7 @@ def update_channel(window,source,num):
 		window['source_'+str(num)+'_channel'].update(values = ['A'], value = 'A')
 	elif source == 'K2604B':
 		window['source_'+str(num)+'_channel'].update(values = ['A','B'], value = 'A')
-	elif source == 'B2902A':
+	elif source == 'B2902A' or source == 'B2902B':
 		window['source_'+str(num)+'_channel'].update(values = ['1','2'], value = '1')
 	elif source == 'LDC3908':
 		window['source_'+str(num)+'_channel'].update(values = ['1','2','3','4','5','6','7','8'], value = '1')
